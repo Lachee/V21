@@ -8,8 +8,7 @@ namespace V21Bot.Magicks
 {
 	class TriggeredMagick : IMagick
 	{
-		const string TRIGGER = "D:/triggeredbarx256.png";
-		const string OUTPUT = "D:/output.gif";
+		const string TRIGGER = "Resources/triggeredbarx256.png";
 
 		public int FrameCount { get; set; } = 4;
 		public int FrameDelay { get; set; } = 2;

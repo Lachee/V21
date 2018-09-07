@@ -16,6 +16,8 @@ namespace V21Bot.Commands
 
 		[Command("colour")]
 		[Aliases("color")]
+		[Hidden]
+		[RequireOwner]
 		[Description("Gives current user a colour")]
 		public async Task Colour(CommandContext ctx, [Description("Hexadecimal representation of a RGB colour")] string colour)
 		{

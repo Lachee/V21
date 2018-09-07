@@ -7,7 +7,7 @@ namespace V21Bot.Magicks
 {
 	class PatsMagick : IMagick
 	{
-		const string HANS = "D:/hans.png";
+		const string HANS = "Resources/hans.png";
 
 
 		public int FrameCount { get; set; } = 20;

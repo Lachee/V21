@@ -20,7 +20,7 @@ namespace V21Bot.Commands
 		public static string EmojiGenerating = ":paintbrush:";
 		public static string EmojiFolder = ":file_folder:";
 
-		public static string OutputFile = "D:/output.gif";
+		public static string OutputFile = null;
 
 		[Command("triggered")]
 		[Aliases("trigger")]
