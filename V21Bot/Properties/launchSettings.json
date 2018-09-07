@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "V21Bot": {
+      "commandName": "Project",
+      "commandLineArgs": "-tokenfile \"../../../../discord.key\" -win7"
+    }
+  }
+}

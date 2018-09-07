@@ -1,0 +1,193 @@
+﻿using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Net;
+using V21Bot.Helper;
+using ImageMagick;
+using V21Bot.Magicks;
+using System.IO;
+
+namespace V21Bot.Commands
+{
+	public class Images
+	{
+		public static int CacheLifetime = 15 * 60;
+		public static string EmojiGenerating = ":paintbrush:";
+		public static string EmojiFolder = ":file_folder:";
+
+		public static string OutputFile = "D:/output.gif";
+
+		[Command("triggered")]
+		[Aliases("trigger")]
+		[Description("Triggers us or the supplied image")]
+		public async Task Triggered(CommandContext ctx, [Description("Optional user to trigger")] DiscordUser user = null)
+		{
+			//If the user hasnt been assigned, we will set it to ourself
+			if (user == null) user = ctx.User;
+
+			//If the url is null, we will set it to the user specified
+			string url = user.GetAvatarUrl(DSharpPlus.ImageFormat.Png, 256);
+			
+			//Generate the image
+			await DownloadAndGenerate(ctx, new TriggeredMagick(), url);
+		}
+
+		[Command("pats")]
+		[Aliases("pat")]
+		[Description("Pats the discord user")]
+		public async Task Pats(CommandContext ctx, [Description("The user to pat")] DiscordUser user = null)
+		{
+			//If the user hasnt been assigned, we will set it to ourself
+			if (user == null) user = ctx.User;
+
+			//If the url is null, we will set it to the user specified
+			string url = user.GetAvatarUrl(DSharpPlus.ImageFormat.Png, 256);
+
+			//Generate the image
+			await DownloadAndGenerate(ctx, new PatsMagick(), url);
+		}
+
+		#region Image Generation and Sending
+
+		private async Task DownloadAndGenerate(CommandContext ctx, IMagick magick, string url)
+		{
+			//Trigger typing 
+			await ctx.TriggerTypingAsync();
+
+			string url64 = Utilities.Hash(url);
+			string cachekey = Redis.RedisTools.CreateNamespace("images", magick.Name, url64);
+
+			//Check the cache for any images, if we have some, we dont need to resuse it.
+			byte[] data = await FetchCachedImage(cachekey);
+			if (data != null && data.Length > 0)
+			{
+				//React to the message, say its okay and we understand the request
+				DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, EmojiFolder);
+				await ctx.Message.CreateReactionAsync(emoji);
+
+				//Send it as a stream
+				using (MemoryStream stream = new MemoryStream(data, false))
+					await ctx.RespondWithFileAsync(stream, magick.GetFilename(ctx.User.Username));
+			}
+			else
+			{
+				//Prepare the data
+				data = await DownloadImage(ctx, url);
+				if (data == null) return;
+			
+				//Do the image effect
+				data = await ExecuteMagick(ctx, magick, data);
+				if (data == null) return;
+
+				//Cache the bytes
+				await StoreCachedImage(cachekey, data, CacheLifetime);
+
+				//Write the bytes if requested
+				if (!string.IsNullOrEmpty(OutputFile))
+					await File.WriteAllBytesAsync(OutputFile, data);
+
+				//Send it as a stream
+				using (MemoryStream stream = new MemoryStream(data, false))
+					await ctx.RespondWithFileAsync(stream, magick.GetFilename(ctx.User.Username));
+			}
+		}
+
+		private async Task<byte[]> ExecuteMagick(CommandContext ctx, IMagick magick, byte[] source)
+		{
+			try
+			{
+				//React to the message, say its okay and we understand the request
+				DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, EmojiGenerating);
+				await ctx.Message.CreateReactionAsync(emoji);
+
+				//Trigger the typing before we generate the image
+				await ctx.TriggerTypingAsync();
+
+				//Generate the image
+				return await Task.Run<byte[]>(() =>
+				{
+					var image = new MagickImage(source);
+					return magick.Generate(image);
+				});				
+
+			}
+			catch (Exception e)
+			{
+				await ctx.RespondException(e, false);
+				return null;
+			}
+		}
+		private async Task<byte[]> DownloadImage(CommandContext ctx, string url)
+		{
+			try
+			{
+				//Prepare the data
+				byte[] data = null;
+
+				//Download and validate the URL.
+				using (WebClient client = new WebClient())
+					data = await client.DownloadDataTaskAsync(url);
+
+				//Make sure its correct
+				if (data == null || data.Length == 0)
+				{
+					await ctx.RespondEmbed(ResponseBuilder.ErrorColour, "Failed to download the image. Received 0 bytes or no data at all!");
+					return null;
+				}
+
+				return data;
+			}
+			catch (Exception e)
+			{
+				//Catch any errors.
+				await ctx.RespondException(e, false);
+				return null;
+			}
+		}
+
+		#endregion
+		#region Caching
+
+		/// <summary>
+		/// Fetches a image stored in the cache. Returns null if does not exist.
+		/// </summary>
+		/// <param name="key"></param>
+		/// <returns></returns>
+		private async Task<byte[]> FetchCachedImage(string key)
+		{
+			if (V21.Instance == null || V21.Instance.Redis == null)
+				return null;
+
+			string data = await V21.Instance.Redis.StringGet(key, null);
+			if (data == null) return null;
+
+			return System.Convert.FromBase64String(data);
+		}
+
+		/// <summary>
+		/// Stores a image in cache.
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="image"></param>
+		/// <param name="TTL"></param>
+		/// <returns></returns>
+		private async Task StoreCachedImage(string key, byte[] image, int TTL)
+		{
+			if (V21.Instance == null || V21.Instance.Redis == null) return;
+
+			//Get the data
+			string data = System.Convert.ToBase64String(image);
+
+			//Encode the image as bytes
+			await V21.Instance.Redis.StringSet(key, data, TimeSpan.FromSeconds(TTL));
+		}
+
+		#endregion
+	}
+}
+
