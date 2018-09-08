@@ -6,6 +6,7 @@ So far this bot can:
 
 In the future, the bot may include
 - Generate spin gifs
+- Slap
 
 # Updates
 This readme is probably not going to be updated much, so make sure you keep a eye on twitch.tv/lachee for the live stream of development. Every now and again I will push the master branch to my server, making it live for anyone using it.
