@@ -60,6 +60,7 @@ namespace V21Bot
 		{
 			string token = "";
 			string config = "configuration.json";
+			string resources = "Resources/";
 			bool windows7 = false;
 
 			for (int i = 0; i < args.Length; i++)
@@ -88,6 +89,10 @@ namespace V21Bot
 						config = args[++i];
 						break;
 
+					case "-resources":
+						resources = args[++i];
+						break;
+
 					case "-win7":
 						windows7 = true;
 						break;
@@ -108,13 +113,20 @@ namespace V21Bot
 			}
 
 			//Create the bot
-			V12Instance = new V21(token, null, windows7);
-			await V12Instance.Initialize();
+			V12Instance = new V21(token, null, windows7)
+			{
+				Resources = resources
+			};
 
+			//Instantiate and run the bot
+			await V12Instance.Initialize();
+			
+			//Wait forever
 			Console.WriteLine("Connected!");
 			await Task.Delay(-1);
-			await V12Instance.Deinitialize();
 
+			//Dispose of the bot
+			await V12Instance.Deinitialize();
 			Console.WriteLine("Disconnected!");
 		}
 	}

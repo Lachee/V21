@@ -1,13 +1,14 @@
 ﻿using ImageMagick;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace V21Bot.Magicks
 {
 	class PatsMagick : IMagick
 	{
-		const string HANS = "Resources/hans.png";
+		const string HANS = "hans.png";
 
 
 		public int FrameCount { get; set; } = 20;
@@ -21,14 +22,14 @@ namespace V21Bot.Magicks
 
 		public string Name => "pats";
 		public string GetFilename(string username) { return this.Name + "-" + username + ".gif"; }
-		public byte[] Generate(MagickImage image)
+		public byte[] Generate(string resources, MagickImage image)
 		{
 			//Scale the image first to confine to a 256x256
 			image.Scale(256, 256);
 			image.RePage();
 
 			//Get the TRIGGERED bar and include that too
-			using (var hans = new MagickImage(HANS))
+			using (var hans = new MagickImage(Path.Combine(resources, HANS)))
 			{
 				//Create a new collection, and add frames too it
 				using (var collection = new MagickImageCollection())

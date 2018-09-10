@@ -10,6 +10,6 @@ namespace V21Bot.Magicks
 	{
 		string Name { get; }
 		string GetFilename(string username);
-		byte[] Generate(MagickImage image);
+		byte[] Generate(string resources, MagickImage image);
 	}
 }

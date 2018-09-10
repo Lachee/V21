@@ -14,6 +14,8 @@ namespace V21Bot
 	{
 		public static V21 Instance { get; private set; }
 
+		public string Resources { get; set; }
+
 		public DiscordClient Discord { get; }
 		public CommandsNextModule Commands { get; }
 		public IRedisClient Redis { get; }

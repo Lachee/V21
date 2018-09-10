@@ -8,7 +8,7 @@ namespace V21Bot.Magicks
 {
 	class TriggeredMagick : IMagick
 	{
-		const string TRIGGER = "Resources/triggeredbarx256.png";
+		const string TRIGGER = "triggeredbarx256.png";
 
 		public int FrameCount { get; set; } = 4;
 		public int FrameDelay { get; set; } = 2;
@@ -26,7 +26,7 @@ namespace V21Bot.Magicks
 
 		public string Name => "triggered";
 		public string GetFilename(string username) { return this.Name + "-" + username + ".gif"; }
-		public byte[] Generate(MagickImage image)
+		public byte[] Generate(string resources, MagickImage image)
 		{
 			int xseed = _rnd.Next();
 			int yseed = _rnd.Next();
@@ -55,7 +55,7 @@ namespace V21Bot.Magicks
 			_enableAlpha = image.HasAlpha;
 
 			//Get the TRIGGERED bar and include that too
-			using (var triggerImage = new MagickImage(TRIGGER))
+			using (var triggerImage = new MagickImage(Path.Combine(resources, TRIGGER)))
 			{
 				//Scale the triggered image to the correct size
 				double triggerImageYRatio = (double)triggerImage.Height / (double)triggerImage.Width;

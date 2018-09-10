@@ -2,8 +2,7 @@
   "profiles": {
     "V21Bot": {
       "commandName": "Project",
-      "commandLineArgs": "-tokenfile \"../../../../discord.key\" -win7",
-      "workingDirectory": "D:\\Users\\Lachee\\Documents\\C# Projects\\2017 Projects\\V21Bot"
+      "commandLineArgs": "-tokenfile \"../../../../discord.key\" -win7 -resources \"../../../../Resources/\""
     }
   }
 }

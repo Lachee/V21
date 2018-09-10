@@ -16,7 +16,7 @@ namespace V21Bot.Commands
 {
 	public class Images
 	{
-		public static int CacheLifetime = 15 * 60;
+		public static int CacheLifetime = 5 * 60 * 60;
 		public static string EmojiGenerating = ":paintbrush:";
 		public static string EmojiFolder = ":file_folder:";
 
@@ -112,7 +112,7 @@ namespace V21Bot.Commands
 				return await Task.Run<byte[]>(() =>
 				{
 					var image = new MagickImage(source);
-					return magick.Generate(image);
+					return magick.Generate(V21.Instance.Resources, image);
 				});				
 
 			}
