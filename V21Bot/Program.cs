@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,65 +59,44 @@ namespace V21Bot
 
 		static async Task MainAsync(string[] args)
 		{
-			string token = "";
-			string config = "configuration.json";
-			string resources = "Resources/";
-			bool windows7 = false;
-
+			string configFile = "config.json";
 			for (int i = 0; i < args.Length; i++)
 			{
 				switch (args[i])
 				{
-					case "-token":
-						token = args[++i];
-						break;
-
-					case "-tokenfile":
-
-						//Get the file and make sure it exists
-						string file = args[++i];
-						if (!File.Exists(file))
-						{
-							Console.WriteLine("Token File '{0}' does not exist!", file);
-							return;
-						}
-
-						//Load the token
-						token = await File.ReadAllTextAsync(file);
-						break;
-
 					case "-config":
-						config = args[++i];
-						break;
-
-					case "-resources":
-						resources = args[++i];
-						break;
-
-					case "-win7":
-						windows7 = true;
-						break;
-
-					default:
-						Console.WriteLine("Unknown Command: {0}", args[i]);
-						Console.WriteLine("Available Commands: -token, -tokenfile, -config, -win7");
+						configFile = args[++i];
 						break;
 
 				}
 			}
 
-			//Make sure the key is valid
-			if (string.IsNullOrEmpty(token))
+
+			//Load the config
+			BotConfig config = new BotConfig();
+			if (File.Exists(configFile))
 			{
-				Console.WriteLine("Invalid key! Please use -key or -keyfile!");
-				return;
+				string json = await File.ReadAllTextAsync(configFile);
+				try
+				{
+					config = JsonConvert.DeserializeObject<BotConfig>(json);
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine(e.Message);
+					return;
+				}
+			}
+			else
+			{
+				//Save the config 
+				string json = JsonConvert.SerializeObject(config, Formatting.Indented);
+				await File.WriteAllTextAsync(configFile, json);
 			}
 
 			//Create the bot
-			V12Instance = new V21(token, null, windows7)
-			{
-				Resources = resources
-			};
+			V12Instance = new V21(config);
+
 
 			//Instantiate and run the bot
 			await V12Instance.Initialize();
@@ -128,6 +108,18 @@ namespace V21Bot
 			//Dispose of the bot
 			await V12Instance.Deinitialize();
 			Console.WriteLine("Disconnected!");
+
+			try
+			{
+				//Save the config again
+				string json = JsonConvert.SerializeObject(V12Instance.Config, Formatting.Indented);
+				await File.WriteAllTextAsync(configFile, json);
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e.Message);
+				return;
+			}
 		}
 	}
 }

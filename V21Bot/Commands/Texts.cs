@@ -62,7 +62,7 @@ namespace V21Bot.Commands
 
 			var coffee = DiscordEmoji.FromName(ctx.Client, ":coffee:");
 			
-			var lines = await File.ReadAllLinesAsync(Path.Combine(V21.Instance.Resources, "facts.coffee.txt"));
+			var lines = await File.ReadAllLinesAsync(Path.Combine(V21.Instance.Config.Resources, "facts.coffee.txt"));
 			if (lines.Length < 2)
 			{
 				await ctx.RespondAsync("I am sorry, but there are not enough facts for coffee yet!");

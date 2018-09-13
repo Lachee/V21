@@ -2,7 +2,7 @@
   "profiles": {
     "V21Bot": {
       "commandName": "Project",
-      "commandLineArgs": "-tokenfile \"../../../../discord.key\" -win7 -resources \"../../../../Resources/\""
+      "commandLineArgs": "-config \"../../../../config.json\""
     }
   }
 }

@@ -22,6 +22,28 @@ namespace V21Bot.Commands
 
 		public static string OutputFile = null;
 
+		[Command("cute")]
+		[Aliases("aww", "pet", "animals", "animal")]
+		[Description("Gives a cute animal")]
+		public async Task Cute(CommandContext ctx)
+		{
+			await ctx.TriggerTypingAsync();
+
+			Random random = new Random();
+			Imgur.Models.ImgurImage[] images = await V21.Instance.Imgur.GetSubredditGallery("aww", random.Next(0, 250));
+			Imgur.Models.ImgurImage image = null;
+
+			string[] allowedTypes = { "" };
+			do { image = images[random.Next(images.Length)]; } while (!image.Type.StartsWith("image"));
+
+			var builder = new ResponseBuilder(ctx)
+				.WithImageUrl(image.Link)
+				.WithUrl(image.Link)
+				.WithAuthor(image.Title, image.Link);
+
+			await ctx.RespondAsync(embed: builder);
+		}
+
 		[Command("triggered")]
 		[Aliases("trigger")]
 		[Description("Triggers us or the supplied image")]
@@ -112,7 +134,7 @@ namespace V21Bot.Commands
 				return await Task.Run<byte[]>(() =>
 				{
 					var image = new MagickImage(source);
-					return magick.Generate(V21.Instance.Resources, image);
+					return magick.Generate(V21.Instance.Config.Resources, image);
 				});				
 
 			}
