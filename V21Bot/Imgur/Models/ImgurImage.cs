@@ -5,7 +5,7 @@ using System.Text;
 
 namespace V21Bot.Imgur.Models
 {
-	class ImgurImage
+	public class ImgurImage
 	{
 		[JsonProperty("id")]
 		public string ID { get; private set; }

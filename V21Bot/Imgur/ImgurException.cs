@@ -29,7 +29,7 @@ namespace V21Bot.Imgur
 			return InnerMessage;
 		}
 
-		struct ImgurError
+		public struct ImgurError
 		{
 			[JsonProperty("error")]
 			public string Error { get; }

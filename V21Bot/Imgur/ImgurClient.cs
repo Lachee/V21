@@ -11,7 +11,7 @@ using V21Bot.Imgur.Response;
 
 namespace V21Bot.Imgur
 {
-	class ImgurClient
+	public class ImgurClient
 	{
 		public string ApiUrl => "https://api.imgur.com/3/";
 

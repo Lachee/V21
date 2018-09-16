@@ -4,7 +4,7 @@ using System.Text;
 
 namespace V21Bot.Imgur
 {
-	enum SortMode
+	public enum SortMode
 	{
 		Time,
 		Top

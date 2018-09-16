@@ -11,7 +11,7 @@ using V21Bot.Imgur;
 
 namespace V21Bot
 {
-	class V21
+	public class V21
 	{
 		public static V21 Instance { get; private set; }
 

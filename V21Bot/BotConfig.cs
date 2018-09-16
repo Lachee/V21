@@ -5,7 +5,7 @@ using System.Text;
 
 namespace V21Bot
 {
-	class BotConfig
+	public class BotConfig
 	{
 		public string Prefix { get; set; } = ">";
 		public string DiscordKeyFile { get; set; } = "discord.key";
@@ -14,7 +14,7 @@ namespace V21Bot
 		public bool WebSocket4Net { get; set; } = false;
 
 		private string _discordkey;
-		public string GetDiscordKey()
+		internal string GetDiscordKey()
 		{
 			if (string.IsNullOrEmpty(_discordkey))
 				if (File.Exists(DiscordKeyFile))
@@ -23,7 +23,7 @@ namespace V21Bot
 		}
 
 		private string _imgurkey;
-		public string GetImgurKey()
+		internal string GetImgurKey()
 		{
 			if (string.IsNullOrEmpty(_imgurkey))
 				if (File.Exists(ImgurKeyFile))

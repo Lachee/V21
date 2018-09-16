@@ -6,8 +6,8 @@ using System.Text;
 
 namespace V21Bot.Imgur.Response
 {
-	interface IImgurData { }
-	class ImgurResponse
+	public interface IImgurData { }
+	public class ImgurResponse
 	{
 		[JsonProperty("success")]
 		public bool Success { get; private set; }

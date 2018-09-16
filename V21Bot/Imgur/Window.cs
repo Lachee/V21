@@ -4,7 +4,7 @@ using System.Text;
 
 namespace V21Bot.Imgur
 {
-	enum Window
+	public enum Window
 	{
 		Day,
 		Week,
