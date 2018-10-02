@@ -5,6 +5,7 @@ using System.Text;
 
 namespace V21Bot.Imgur.Models
 {
+    [JsonObject(ItemRequired = Required.Default, MemberSerialization = MemberSerialization.OptIn, ItemReferenceLoopHandling = ReferenceLoopHandling.Error)]
 	public class ImgurImage
 	{
 		[JsonProperty("id")]
@@ -30,7 +31,7 @@ namespace V21Bot.Imgur.Models
 		[JsonProperty("bandwidth")]
 		public ulong Bandwidth { get; private set; }
 		[JsonProperty("nsfw")]
-		public bool NSFW { get; private set; }
+		public bool? NSFW { get; private set; }
 		[JsonProperty("section")]
 		public string Section { get; private set; }
 		[JsonProperty("link")]
@@ -40,6 +41,6 @@ namespace V21Bot.Imgur.Models
 		[JsonProperty("downs")]
 		public int? Downs { get; private set; }
 		[JsonProperty("score")]
-		public int Score { get; private set; }
+		public int? Score { get; private set; }
 	}
 }

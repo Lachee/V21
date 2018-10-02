@@ -18,6 +18,7 @@ namespace V21Bot
 		public DiscordClient Discord { get; }
 		public CommandsNextModule Commands { get; }
 		public IRedisClient Redis { get; }
+        public bool RedisAvailable { get; }
 		public ImgurClient Imgur { get; }
 
 		public BotConfig Config { get; }
@@ -41,10 +42,19 @@ namespace V21Bot
 			Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { StringPrefix = Config.Prefix });
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
-		
-			//Create Redis
-			Redis = new StackExchangeClient("localhost", 4);
-			RedisTools.RootNamespace = "V21";
+
+            //Create Redis
+            if (Config.UseRedis)
+            {
+                Redis = new StackExchangeClient("localhost", 4);
+                RedisTools.RootNamespace = "V21";
+                RedisAvailable = true;
+            }
+            else
+            {
+                Redis = null;
+                RedisAvailable = false;
+            }
 
 			//Create Imgur
 			Imgur = new ImgurClient(Config.GetImgurKey());
@@ -53,7 +63,7 @@ namespace V21Bot
 		public async Task Initialize()
 		{
 			//Connect to redis
-			await Redis.Initialize();
+            if (RedisAvailable) await Redis.Initialize();
 
 			//Connect to discord
 			await Discord.ConnectAsync();

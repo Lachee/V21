@@ -12,6 +12,7 @@ namespace V21Bot
 		public string ImgurKeyFile { get; set; } = "imgur.key";
 		public string Resources { get; set; } = "Resources/";
 		public bool WebSocket4Net { get; set; } = false;
+        public bool UseRedis { get; set; } = true;
 
 		private string _discordkey;
 		internal string GetDiscordKey()

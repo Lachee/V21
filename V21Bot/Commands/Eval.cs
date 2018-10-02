@@ -25,7 +25,19 @@ namespace V21Bot.Commands
 		static readonly string EvalNamespace = "V21Bot.Eval.Sandbox";
 		static readonly string EvalClass = "EvalSandbox";
 		static readonly string EvalFunction = "Execute";
-		static readonly MetadataReference[] References;
+        static readonly MetadataReference[] References;
+        static readonly string[] EvalIncludes = new string[]
+        {
+            "System",
+            "System.Collections.Generic",
+            "System.Linq",
+            "System.Threading.Tasks",
+            "DSharpPlus.CommandsNext",
+            "V21Bot.Redis",
+            "V21Bot.Helper",
+            "V21Bot.Imgur",
+            "DSharpPlus.Entities"
+        };
 		static Eval()
 		{
 			//Path of the dotnet
@@ -35,8 +47,8 @@ namespace V21Bot.Commands
 			references.AddRange(Directory.EnumerateFiles(assemblyPath, "System.*.dll").Select(x => MetadataReference.CreateFromFile(x)).ToArray());	//Standard System libraries
 			references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "netstandard.dll")));										//Netstandard LIbraries
 			references.Add(MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")));                                           //C#
-
-			references.Add(MetadataReference.CreateFromFile(typeof(V21).GetTypeInfo().Assembly.Location));                                          //Self Library
+            
+            references.Add(MetadataReference.CreateFromFile(typeof(V21).GetTypeInfo().Assembly.Location));                                          //Self Library
 			references.Add(MetadataReference.CreateFromFile(typeof(DiscordClient).GetTypeInfo().Assembly.Location));								//D#+
 			references.Add(MetadataReference.CreateFromFile(typeof(CommandContext).GetTypeInfo().Assembly.Location));								//Command Next
 			references.Add(MetadataReference.CreateFromFile(typeof(StackExchange.Redis.ClientInfo).GetTypeInfo().Assembly.Location));				//Redis Library
@@ -44,33 +56,24 @@ namespace V21Bot.Commands
 			References = references.ToArray();
 		}
 
-		struct Evaluation
+		public struct Evaluation
 		{
 			//public Func<CommandContext, Task<object>> function;
 			public Evaluatable evaluatable;
 			public IEnumerable<Diagnostic> errors;
 			public bool compiled;
 			public long duration;
+            public string source;
 		}
 
-		readonly string[] EvalIncludes = new string[] 
-		{
-			"System",
-			"System.Collections.Generic",
-			"System.Linq",
-			"System.Threading.Tasks",		
-			"DSharpPlus.CommandsNext",
-			"V21Bot.Redis",
-			"V21Bot.Helper",
-			"V21Bot.Imgur",
-			"DSharpPlus.Entities"
-		};
+        //public static Evaluation PreviousEvaluation => _previousEvaluation;
+        private static Evaluation previousEvaluation = new Evaluation() { compiled = false, duration = 0, errors = null, source = "" };
 
 		[Command("evaluate")]
 		[Aliases("eval", "$")]
 		[Description("Evaluates C#")]
 		[RequireOwner]
-		public async Task EvaluateRoslyn(CommandContext ctx, [RemainingText] string message)
+		public async Task CmdEvaluate(CommandContext ctx, [RemainingText] string message)
 		{
 			string code = "";
 			if (message.Contains("\n"))
@@ -112,7 +115,7 @@ namespace V21Bot.Commands
 
 			//Compile the class and edit the message to the current value
 			await ctx.TriggerTypingAsync();
-			Evaluation eval = EvaluateClass(code);
+			Evaluation eval = previousEvaluation = EvaluateClass(code);
 
 			//Update the message
 			response = new ResponseBuilder(ctx);
@@ -189,7 +192,62 @@ namespace V21Bot.Commands
 			}
 		}
 
-		private Evaluation EvaluateClass(string source)
+        [Command("source")]
+        [Aliases("evals", "src", "evalsrc")]
+        [Description("Returns the last evaluated code that was compiled")]
+        public async Task CmdSource(CommandContext ctx, [Description("The name of the method you wish to view. If null, the previous one is printed")] string name = null)
+        {
+            string src = previousEvaluation.source;
+            bool format = src.Length < 1500;
+            if (format)
+            {
+                await ctx.TriggerTypingAsync();
+
+                src = src.Replace(";\n", ";");
+                src = src.Replace(";", ";\n");
+                src = src.Replace("{", "\n{\n");
+                src = src.Replace("}", "}\n");
+
+                string[] lines = src.Split("\n");
+                StringBuilder formatted = new StringBuilder();
+                int tabbing = 0;
+
+                foreach (var line in lines)
+                {
+                    if (line.EndsWith("}")) tabbing--;
+                    formatted.Append(new String(' ', Math.Max(0, tabbing * 4))).Append(line).Append('\n');
+                    if (line.StartsWith("{")) tabbing++;
+                }
+
+                src = formatted.ToString();
+            }
+
+            await ctx.RespondAsync("```cs\n" + src + "\n```");
+            await ctx.RespondAsync((format ? "_formatted for readability_\n" : "") + "Compiled Successfully: " + previousEvaluation.compiled + ", " + previousEvaluation.duration + "ms");
+        }
+
+        [Group("cmd")]
+        [RequireOwner]
+        public class CommandGroup
+        {
+            private static Dictionary<string, Evaluation> _commands = new Dictionary<string, Evaluation>();
+
+            [Command("save")]
+            [Aliases("store", "add")]
+            [Description("Stores the last compiled method under the name for later use")]
+            public async Task CmdSave(CommandContext ctx, string name)
+            {
+                _commands[name] = previousEvaluation;
+                await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":white_check_mark:"));
+            }
+
+           
+
+        }
+
+
+
+        private Evaluation EvaluateClass(string source)
 		{
 			//Generate and start the stopwatch
 			Stopwatch stopwatch = new Stopwatch();
@@ -224,7 +282,8 @@ namespace V21Bot.Commands
 					{
 						errors = failures,
 						duration = stopwatch.ElapsedMilliseconds,
-						compiled = false
+						compiled = false,
+                        source = source
 					};
 				}
 				else
@@ -246,8 +305,9 @@ namespace V21Bot.Commands
 					{
 						evaluatable = instance,
 						duration = stopwatch.ElapsedMilliseconds,
-						compiled = true
-					};
+						compiled = true,
+                        source = source
+                    };
 				}
 			}
 		}
@@ -312,6 +372,8 @@ namespace V21Bot.Commands
 		public DiscordUser user { get { return ctx.User; } }
 		public DiscordGuild guild { get { return ctx.Guild; } }
 		public DiscordChannel channel { get { return ctx.Channel; } }
+        public DiscordMessage message => ctx.Message;
+
 		public V21 v21 { get { return V21.Instance; } }
 		public string resources => v21.Config.Resources;
 
@@ -325,6 +387,12 @@ namespace V21Bot.Commands
 			this.ctx = ctx;
 			return await Execute();
 		}
+
+        public async Task<string> GetRoles(ulong memberID)
+        {
+            var member = await guild.GetMemberAsync(memberID);
+            return string.Join("\r\n", member.Roles.Select(r => r.Name));
+        }
 
 		public async Task<DiscordMessage> Respond(string content = null, DiscordEmbed embed = null) { return await ctx.RespondAsync(content: content, embed: embed); }
 		public async Task<DiscordMessage> RespondWithFileAsync(string filename, Action<Stream> action, string content = null, DiscordEmbed embed = null)

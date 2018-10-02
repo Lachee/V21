@@ -53,6 +53,49 @@ namespace V21Bot.Commands
 			{ '.', '．' }, { ',', '，' }, { ':', '：' }, { ';', '；' },
 		};
 		private readonly Regex DiceRegex = new Regex(@"(?'count'\d{1,2})[dD](?'sides'\d{1,3})", RegexOptions.Compiled);
+        
+
+        [Command("rate")]
+        [Description("Rates a user")]
+        public async Task Rate(CommandContext ctx, DiscordUser user)
+        {
+            //We rate 2 aspects, username and avatar. So generate 2 randoms
+            int rateAvatar = 0;
+            int rateUid = 0;
+
+            //Rate the avatar
+            if (user.AvatarHash != null)
+            {
+                Random randAvatar = new Random(user.AvatarHash.GetHashCode());
+                rateAvatar = randAvatar.Next(0, 10);
+            }
+
+            //Rate the User ID
+            Random randUser = new Random(user.Id.GetHashCode());
+            rateUid = randUser.Next(0, 10);
+
+            //I am the bestest there is
+            if (user.Id == 130973321683533824L)
+            {
+                rateAvatar = 11;
+                rateUid = 11;
+            }
+
+            //Now tell them:
+            int total = (rateAvatar + rateUid) / 2;
+            string sas = "";
+            if (total >= 10) sas = "Ooooooh Mmmmyyyyy.";
+            if (total > 8) sas = "Hello mister ;)"; 
+            if (total < 5) sas = "I am sorry, I dont think this will work out between us.";
+            if (total < 2) sas = "Maybe a pats could make you feel better?";
+            if (total <= 0) sas = "OOF.";
+
+            if (rateAvatar < 3 && rateAvatar > 0) sas += " Your picture just doesnt do it for me.";
+            if (rateAvatar <= 0) sas += " Your picture is just beyond horrible. I am so sorry.";
+            if (rateAvatar >= 10) sas += " Your picture is just so handsome!";
+
+            await ctx.RespondAsync("I give " + user.Mention + " a **" + total + "**. " + sas);
+        }
 
 		[Command("coffee")]
 		[Description("Gives you a fun coffee fact")]

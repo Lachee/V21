@@ -11,6 +11,7 @@ using V21Bot.Helper;
 using ImageMagick;
 using V21Bot.Magicks;
 using System.IO;
+using V21Bot.Imgur.Models;
 
 namespace V21Bot.Commands
 {
@@ -22,29 +23,90 @@ namespace V21Bot.Commands
 
 		public static string OutputFile = null;
 
-		[Command("cute")]
-		[Aliases("aww", "pet", "animals", "animal")]
-		[Description("Gives a cute animal")]
-		public async Task Cute(CommandContext ctx)
-		{
-			await ctx.TriggerTypingAsync();
+        [Command("cute")]
+        [Aliases("aww", "pet", "animals", "animal")]
+        [Description("Gives a cute animal")]
+        public async Task Cute(CommandContext ctx)
+        {
+            await ctx.TriggerTypingAsync();
 
-			Random random = new Random();
-			Imgur.Models.ImgurImage[] images = await V21.Instance.Imgur.GetSubredditGallery("aww", random.Next(0, 250));
-			Imgur.Models.ImgurImage image = null;
+            Random random = new Random();
+            Imgur.Models.ImgurImage[] images = await V21.Instance.Imgur.GetSubredditGallery("aww", random.Next(0, 250));
+            Imgur.Models.ImgurImage image = null;
 
-			string[] allowedTypes = { "" };
-			do { image = images[random.Next(images.Length)]; } while (!image.Type.StartsWith("image"));
+            if (images.Length == 0)
+            {
+                await ctx.RespondAsync(":interrobang: Found no images to display?");
+                return;
+            }
 
-			var builder = new ResponseBuilder(ctx)
-				.WithImageUrl(image.Link)
-				.WithUrl(image.Link)
-				.WithAuthor(image.Title, image.Link);
+            string[] allowedTypes = { "" };
+            do
+            {
+                await ctx.TriggerTypingAsync();
+                image = images[random.Next(images.Length)];
+            }
+            while (image == null 
+                    || !image.Type.StartsWith("image")
+                    || !image.Link.StartsWith("https") 
+                    || image.NSFW.GetValueOrDefault(false)
+                    || !image.Animated);
 
-			await ctx.RespondAsync(embed: builder);
-		}
+            var builder = new ResponseBuilder(ctx)
+                .WithImageUrl(image.Link)
+                .WithUrl(image.Link)
+                .WithAuthor(image.Title, image.Link);
 
-		[Command("triggered")]
+            await ctx.RespondAsync(embed: builder);
+        }
+
+        [Command("spook")]
+        [Aliases("skele", "scarry", "spooky", "skeli")]
+        [Description("Gives a cute animal")]
+        public async Task Spook(CommandContext ctx)
+        {
+            await ctx.TriggerTypingAsync();
+
+            Random random = new Random();
+            Imgur.Models.ImgurAlbum[] albums = await V21.Instance.Imgur.GetSubredditTopic("skeletonwar", 0);
+            Imgur.Models.ImgurImage image = null;
+
+            if (albums.Length == 0)
+            {
+                await ctx.RespondAsync(":interrobang: Found no images to display?");
+                return;
+            }
+
+            string[] allowedTypes = { "" };
+            do
+            {
+                await ctx.TriggerTypingAsync();
+                var album = albums[random.Next(albums.Length)];
+                for (int i = 0; i < album.Images.Length; i++)
+                {
+                    var img = album.Images[i];
+                    if (img.Animated && !img.NSFW.GetValueOrDefault(false) && img.Link.StartsWith("https"))
+                    {
+                        image = img;
+                        break;
+                    }
+                }
+            }
+            while (image == null 
+                    || !image.Type.StartsWith("image")
+                    || !image.Link.StartsWith("https") 
+                    || image.NSFW.GetValueOrDefault(false)
+                    || !image.Animated);
+
+            var builder = new ResponseBuilder(ctx)
+                .WithImageUrl(image.Link)
+                .WithUrl(image.Link)
+                .WithAuthor(image.Title, image.Link);
+
+            await ctx.RespondAsync(embed: builder);
+        }
+
+        [Command("triggered")]
 		[Aliases("trigger")]
 		[Description("Triggers us or the supplied image")]
 		public async Task Triggered(CommandContext ctx, [Description("Optional user to trigger")] DiscordUser user = null)
