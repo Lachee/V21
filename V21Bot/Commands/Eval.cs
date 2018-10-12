@@ -469,7 +469,7 @@ namespace V21Bot.Commands
 			if (type == typeof(void))		return "void";
 			if (type == typeof(string))		return "string";
 			if (type == typeof(object))		return "object";
-			if (type.IsGenericType) return type.Name + "<" + string.Join(", ", type.GenericTypeArguments.Select(t => GetTypeName(t))) + ">";
+			if (type.IsGenericType) return type.Name.Remove(type.Name.IndexOf('`')) + "<" + string.Join(", ", type.GenericTypeArguments.Select(t => GetTypeName(t))) + ">";
 
 
 			if (!type.IsPrimitive)			return type.Name;			
