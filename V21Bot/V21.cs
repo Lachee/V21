@@ -38,10 +38,30 @@ namespace V21Bot
 			if (Config.WebSocket4Net)
 				Discord.SetWebSocketClient<WebSocket4NetCoreClient>();
 
-			//Create Commands
+            //Create Commands
+            Console.WriteLine("Creating Commands (Prefix: {0})", Config.Prefix);
 			Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { StringPrefix = Config.Prefix });
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
+
+
+            Discord.MessageUpdated += async (args) =>
+            {
+                if (args.Author.IsBot) return;
+
+                var app = await Discord.GetCurrentApplicationAsync();
+                if (args.Author != app.Owner) return;
+
+                int mpos = args.Message.GetStringPrefixLength(Config.Prefix);
+                if (mpos < 0) return;
+
+                string content = args.Message.Content.Substring(mpos).ToLowerInvariant();
+                if (content.StartsWith("eval ") || content.StartsWith("evaluate ") || content.StartsWith("$ "))
+                {
+                    Console.WriteLine("Re-Executing Command...");
+                    await Commands.SudoAsync(args.Author, args.Channel, args.Message.Content);
+                }
+            };
 
             //Create Redis
             if (Config.UseRedis)
@@ -59,8 +79,9 @@ namespace V21Bot
 			//Create Imgur
 			Imgur = new ImgurClient(Config.GetImgurKey());
 		}
+        
 
-		public async Task Initialize()
+        public async Task Initialize()
 		{
 			//Connect to redis
             if (RedisAvailable) await Redis.Initialize();
@@ -80,4 +101,5 @@ namespace V21Bot
 			await Discord.DisconnectAsync();
 		}
 	}
+
 }
