@@ -25,7 +25,7 @@ namespace V21Bot.Commands
             }
 
             //Make sure its not ourself
-            if (member == ctx.Member && !ctx.Member.IsOwner)
+            if (member == ctx.Member && ctx.Member.Id != V21.Instance.Owner.Id)
             {
                 await ctx.RespondException("You cannot enforce / unenforce nicknames onto yourself.");
                 return;
@@ -48,7 +48,7 @@ namespace V21Bot.Commands
                 }
 
                 //Make sure we are allowed to 
-                if (!ctx.Member.IsOwner && ctx.Member.Roles.OrderByDescending(r => r.Position).Select(r => r.Position).First() >= enforcement.HighestRole)
+                if (ctx.Member.Id != V21.Instance.Owner.Id && ctx.Member.Roles.OrderByDescending(r => r.Position).Select(r => r.Position).First() < enforcement.HighestRole)
                 {
                     await ctx.RespondException($"Cannot remove the enforcement as <@{enforcement.Responsible}> ({enforcement.ResponsibleName}) set it and out ranks you.");
                     return;

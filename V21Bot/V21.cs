@@ -10,6 +10,7 @@ using V21Bot.Helper;
 using V21Bot.Imgur;
 using DSharpPlus.Interactivity;
 using V21Bot.Entities;
+using DSharpPlus.Entities;
 
 namespace V21Bot
 {
@@ -26,7 +27,9 @@ namespace V21Bot
 
 		public BotConfig Config { get; }
 
-		public V21(BotConfig config)
+        public DiscordUser Owner => Discord.CurrentApplication.Owner;
+
+        public V21(BotConfig config)
 		{
 			Instance = this;
 			Config = config;
@@ -46,7 +49,7 @@ namespace V21Bot
 			Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { StringPrefix = Config.Prefix });
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
-
+          
             Interactivty = Discord.UseInteractivity(new InteractivityConfiguration() {
                 PaginationBehaviour = TimeoutBehaviour.Delete,
                 PaginationTimeout = new TimeSpan(0, 10, 0),
