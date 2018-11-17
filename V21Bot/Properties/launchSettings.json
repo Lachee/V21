@@ -2,7 +2,7 @@
   "profiles": {
     "V21Bot": {
       "commandName": "Project",
-      "commandLineArgs": "-config \"../config.json\""
+      "commandLineArgs": "-config \"../../../../config.json\""
     }
   }
 }

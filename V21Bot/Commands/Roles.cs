@@ -14,6 +14,34 @@ namespace V21Bot.Commands
 		const byte TOTAL_COLOURS = 16;
 		const string ROLE_PREFIX = "Colour ";
 
+        [Command("nick")]
+        [RequireOwner]
+        public async Task ForceNickname(CommandContext ctx, [Description("The user to force the nickname")] DiscordUser user, [Description("The nickname")] string nickname)
+        {
+            var member = await ctx.Guild.GetMemberAsync(user.Id);
+            if (member == null)
+            {
+                await ctx.RespondAsync("Cannot nickname a user that isnt in the guild!");
+                return;
+            }
+
+            string keyEntry = Redis.RedisTools.CreateNamespace("nicks", ctx.Guild.Id, user.Id);
+            if (string.IsNullOrEmpty(nickname))
+            {
+                await ctx.RespondAsync("Removing nickname...");
+                await V21.Instance.Redis.StringSetAsync(keyEntry, "", TTL: TimeSpan.FromSeconds(1));
+                await member.ModifyAsync(nickname: "");
+            }
+            else
+            {
+                await ctx.RespondAsync("Forcing Nickname...");
+                await V21.Instance.Redis.StringSetAsync(keyEntry, nickname);
+                await member.ModifyAsync(nickname: nickname);
+            }
+
+            await ctx.RespondAsync("Done!");
+        }
+
 		[Command("colour")]
 		[Aliases("color")]
 		[Hidden]

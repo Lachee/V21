@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Scripting;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,8 +22,10 @@ using V21Bot.Helper;
 namespace V21Bot.Commands
 {
 	public class Eval
-	{
-		static readonly string EvalNamespace = "V21Bot.Eval.Sandbox";
+    {
+        static readonly int PageSize = 1800;
+        static readonly int PageLineCount = 20;
+        static readonly string EvalNamespace = "V21Bot.Eval.Sandbox";
 		static readonly string EvalClass = "EvalSandbox";
 		static readonly string EvalFunction = "Execute";
         static readonly MetadataReference[] References;
@@ -68,6 +71,15 @@ namespace V21Bot.Commands
 
         //public static Evaluation PreviousEvaluation => _previousEvaluation;
         private static Evaluation previousEvaluation = new Evaluation() { compiled = false, duration = 0, errors = null, source = "" };
+
+        [Command("sum")]
+        [Description("Sums a C# expression")]
+        [RequireOwner]
+        public async Task CmdSum(CommandContext ctx, int count, [RemainingText] string code)
+        {
+            string cmd = "```cs\ndouble val = 0;\nfor (int i = 0; i < " + count + "; i++)\n{\nval += " + code + ";\n}\nreturn val;\n```";
+            await CmdEvaluate(ctx, cmd);
+        }
 
 		[Command("evaluate")]
 		[Aliases("eval", "$")]
@@ -165,7 +177,60 @@ namespace V21Bot.Commands
 				//Log out new output
 				if (output != null)
 				{
-					await ctx.RespondAsync("```csharp\r\n" + output.ToString() + "\r\n```");
+                    string evaluatedOutput = "";
+                    if (output is string || output.GetType().IsPrimitive)
+                    {
+                        evaluatedOutput = output.ToString();
+                    }
+                    else
+                    {
+                        try
+                        {
+                            evaluatedOutput = JsonConvert.SerializeObject(output, Formatting.Indented);
+
+                        }
+                        catch (Exception ex)
+                        {
+                            await ctx.RespondException(ex, false);
+                            evaluatedOutput = output.ToString();
+                        }
+                    }
+
+                    if (evaluatedOutput.Length < PageSize)
+                    {
+                        await ctx.RespondAsync("```csharp\n" + evaluatedOutput + "\n```");
+                    }
+                    else
+                    {
+                        int tally = 0;
+                        int lines = 0;
+                        StringBuilder temp = new StringBuilder();
+                        List<string> pages = new List<string>();
+                        foreach (string line in evaluatedOutput.Split('\n'))
+                        {
+                            if (lines > PageLineCount || tally + line.Length > PageSize)
+                            {
+                                tally = 0;
+                                lines = 0;
+                                pages.Add(temp.ToString());
+                                temp.Clear();
+                            }
+
+                            temp.Append(line);
+                            tally += line.Length;
+                            lines += 1;
+                        }
+                        //pages.Select(p => new DSharpPlus.Interactivity.Page() { Content = p })
+                        /*
+                        var dsharppages = new DSharpPlus.Interactivity.Page[]{
+                            new DSharpPlus.Interactivity.Page() { Embed = new DiscordEmbedBuilder().WithDescription("hello") },
+                            new DSharpPlus.Interactivity.Page() { Embed = new DiscordEmbedBuilder().WithDescription("world") },
+                            new DSharpPlus.Interactivity.Page() { Embed = new DiscordEmbedBuilder().WithDescription("frank") }
+                        };
+                        */
+                        var dsharppages = pages.Select((p, index) => new DSharpPlus.Interactivity.Page() { Content = $"```cs\n{p}\n```**Page** {index+1}/{pages.Count}" });
+                        await V21.Instance.Interactivty.SendPaginatedMessage(ctx.Channel, ctx.User, dsharppages);
+                    }
 				}
 				else
 				{

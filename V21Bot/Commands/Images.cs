@@ -23,6 +23,18 @@ namespace V21Bot.Commands
 
 		public static string OutputFile = null;
 
+        [Command("avatar")]
+        [Aliases("avi", "pfp", "ava")]
+        public async Task Avatar(CommandContext ctx, [Description("Optional user to get the avatar off")] DiscordUser user = null)
+        {
+            if (user == null)
+                user = ctx.User;
+
+            string format = "";
+            if (user.AvatarHash != null && user.AvatarHash.StartsWith("a_")) format = ".gif";
+            await ctx.RespondAsync($"https://d.lu.je/avatar/{user.Id}{format}");
+        }
+
         [Command("cute")]
         [Aliases("aww", "pet", "animals", "animal")]
         [Description("Gives a cute animal")]
@@ -247,7 +259,7 @@ namespace V21Bot.Commands
 			if (V21.Instance == null || V21.Instance.Redis == null)
 				return null;
 
-			string data = await V21.Instance.Redis.StringGet(key, null);
+			string data = await V21.Instance.Redis.StringGetAsync(key, null);
 			if (data == null) return null;
 
 			return System.Convert.FromBase64String(data);
@@ -268,7 +280,7 @@ namespace V21Bot.Commands
 			string data = System.Convert.ToBase64String(image);
 
 			//Encode the image as bytes
-			await V21.Instance.Redis.StringSet(key, data, TimeSpan.FromSeconds(TTL));
+			await V21.Instance.Redis.StringSetAsync(key, data, TimeSpan.FromSeconds(TTL));
 		}
 
 		#endregion

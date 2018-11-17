@@ -23,11 +23,11 @@ namespace V21Bot.Redis
 		/// <returns></returns>
 		public async Task Initialize() => await Task.Delay(0);
 
-		public async Task StringSet(string key, string value, TimeSpan? TTL = null)
+		public async Task StringSetAsync(string key, string value, TimeSpan? TTL = null)
 		{
 			await database.StringSetAsync(key, value, expiry: TTL);
 		}
-		public async Task<string> StringGet(string key, string @default = null)
+		public async Task<string> StringGetAsync(string key, string @default = null)
 		{
 			var value = await database.StringGetAsync(key);
 			return value.HasValue ? value.ToString() : @default;

@@ -8,6 +8,7 @@ using DSharpPlus.CommandsNext;
 using V21Bot.Redis;
 using V21Bot.Helper;
 using V21Bot.Imgur;
+using DSharpPlus.Interactivity;
 
 namespace V21Bot
 {
@@ -16,8 +17,9 @@ namespace V21Bot
 		public static V21 Instance { get; private set; }
 
 		public DiscordClient Discord { get; }
-		public CommandsNextModule Commands { get; }
-		public IRedisClient Redis { get; }
+        public CommandsNextModule Commands { get; }
+        public InteractivityModule Interactivty { get; }
+        public IRedisClient Redis { get; }
         public bool RedisAvailable { get; }
 		public ImgurClient Imgur { get; }
 
@@ -44,6 +46,11 @@ namespace V21Bot
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
 
+            Interactivty = Discord.UseInteractivity(new InteractivityConfiguration() {
+                PaginationBehaviour = TimeoutBehaviour.Delete,
+                PaginationTimeout = new TimeSpan(0, 10, 0),
+                Timeout = new TimeSpan(0, 10, 0),
+            });
 
             Discord.MessageUpdated += async (args) =>
             {
@@ -61,6 +68,21 @@ namespace V21Bot
                     Console.WriteLine("Re-Executing Command...");
                     await Commands.SudoAsync(args.Author, args.Channel, args.Message.Content);
                 }
+            };
+
+            Discord.GuildMemberUpdated += async (args) =>
+            {
+                //Only want this for nickname change
+                if (args.NicknameAfter == args.NicknameBefore) return;
+
+                //Check if the element exists
+                string keyEntry = RedisTools.CreateNamespace("nicks", args.Guild.Id, args.Member.Id);
+                string nickname = await Redis.StringGetAsync(keyEntry, null);
+
+                //Update the nickname if it does
+                if (nickname != null && nickname != args.NicknameAfter)
+                    await args.Member.ModifyAsync(nickname: nickname);
+                
             };
 
             //Create Redis

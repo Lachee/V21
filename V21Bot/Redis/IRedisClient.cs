@@ -32,8 +32,8 @@ namespace V21Bot.Redis
 	{
 		Task Initialize();
 
-		Task StringSet(string key, string value, TimeSpan? TTL = null);
-		Task<string> StringGet(string key, string @default = null);
+		Task StringSetAsync(string key, string value, TimeSpan? TTL = null);
+		Task<string> StringGetAsync(string key, string @default = null);
 
 		Task HashSetAsync(string key, Dictionary<string, string> values);
         Task<Dictionary<string, string>> HashGetAsync(string key);
