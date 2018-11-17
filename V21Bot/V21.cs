@@ -9,6 +9,7 @@ using V21Bot.Redis;
 using V21Bot.Helper;
 using V21Bot.Imgur;
 using DSharpPlus.Interactivity;
+using V21Bot.Entities;
 
 namespace V21Bot
 {
@@ -76,12 +77,12 @@ namespace V21Bot
                 if (args.NicknameAfter == args.NicknameBefore) return;
 
                 //Check if the element exists
-                string keyEntry = RedisTools.CreateNamespace("nicks", args.Guild.Id, args.Member.Id);
-                string nickname = await Redis.StringGetAsync(keyEntry, null);
+                string redisNamespace = EnforcedNickname.GetRedisNamespace(args.Guild, args.Member);
+                EnforcedNickname enforcement = await Redis.ObjectGetAsync<EnforcedNickname>(redisNamespace);
 
                 //Update the nickname if it does
-                if (nickname != null && nickname != args.NicknameAfter)
-                    await args.Member.ModifyAsync(nickname: nickname);
+                if (enforcement != null && enforcement.Nickname != args.NicknameAfter)
+                    await args.Member.ModifyAsync(nickname: enforcement.Nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
                 
             };
 
@@ -89,7 +90,7 @@ namespace V21Bot
             if (Config.UseRedis)
             {
                 Redis = new StackExchangeClient("localhost", 4);
-                RedisTools.RootNamespace = "V21";
+                RedisNamespace.SetRoot("V21");
                 RedisAvailable = true;
             }
             else

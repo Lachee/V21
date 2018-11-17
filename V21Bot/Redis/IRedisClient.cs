@@ -7,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace V21Bot.Redis
 {
-	public static class RedisTools
+	public static class RedisNamespace
 	{
 		public static string RootNamespace { get; set; } = "";
 		public static string NamespaceSeperator { get; set; } = ":";
 
-		public static string CreateNamespace(params object[] folders)
+        public static void SetRoot(params object[] folders) { RootNamespace = Create(folders); }
+		public static string Create(params object[] folders)
 		{
 			StringBuilder builder = new StringBuilder(RootNamespace);
 			if (folders.Length > 0)
@@ -45,6 +46,8 @@ namespace V21Bot.Redis
 		Task<long> SetAddAsync(string key, params string[] values);
 
 		Task<string> SetGetRandomAsync(string key);
-		Task<string[]> SetGetAllAsync(string key);		
-	}
+        Task<string[]> SetGetAllAsync(string key);
+
+        Task<bool> RemoveAsync(string key);
+    }
 }

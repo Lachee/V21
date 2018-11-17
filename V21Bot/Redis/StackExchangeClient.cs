@@ -23,7 +23,12 @@ namespace V21Bot.Redis
 		/// <returns></returns>
 		public async Task Initialize() => await Task.Delay(0);
 
-		public async Task StringSetAsync(string key, string value, TimeSpan? TTL = null)
+        public async Task<bool> RemoveAsync(string key)
+        {
+            return await database.KeyDeleteAsync(key);
+        }
+
+        public async Task StringSetAsync(string key, string value, TimeSpan? TTL = null)
 		{
 			await database.StringSetAsync(key, value, expiry: TTL);
 		}

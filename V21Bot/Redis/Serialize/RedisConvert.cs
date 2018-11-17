@@ -15,6 +15,10 @@ namespace V21Bot.Redis.Serialize
 		/// <returns></returns>
 		public static T Deserialize<T>(Dictionary<string, string> buffer)
 		{
+            //Buffer is null, return default.
+            if (buffer == null)
+                return default(T);
+
 			//Prepare the type
 			Type type = typeof(T);
 			var constructor = type.GetConstructor(new Type[0]);
@@ -36,7 +40,7 @@ namespace V21Bot.Redis.Serialize
 		/// <param name="reference">The target object</param>
 		/// <param name="subkey">The subkey (optional)</param>
 		/// <returns></returns>
-		public static bool Deserialize(Dictionary<string, string> buffer, Type type, ref object reference, string subkey = "")
+		private static bool Deserialize(Dictionary<string, string> buffer, Type type, ref object reference, string subkey = "")
 		{
 			//Prepare the type and initial options
 			bool hasElements = false;

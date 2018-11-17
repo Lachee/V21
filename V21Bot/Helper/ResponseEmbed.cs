@@ -88,6 +88,9 @@ namespace V21Bot.Helper
 
         public static async Task<DiscordMessage> RespondException(this CommandContext ctx, Exception exception, bool showStackTrace = true) =>
             await ctx.RespondAsync(embed: new ResponseBuilder(ctx, exception, showStackTrace));
-		
+
+        public static async Task<DiscordMessage> RespondException(this CommandContext ctx, string exception) =>
+            await ctx.RespondAsync(embed: new ResponseBuilder(ctx).WithDescription("An error has occured during the {0} command: ```\n{1}\n```", ctx.Command.Name, exception).WithColor(ResponseBuilder.ErrorColour));
+
     }
 }

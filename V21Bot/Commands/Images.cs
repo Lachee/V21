@@ -156,7 +156,7 @@ namespace V21Bot.Commands
 			await ctx.TriggerTypingAsync();
 
 			string url64 = Utilities.Hash(url);
-			string cachekey = Redis.RedisTools.CreateNamespace("images", magick.Name, url64);
+			string cachekey = Redis.RedisNamespace.Create("images", magick.Name, url64);
 
 			//Check the cache for any images, if we have some, we dont need to resuse it.
 			byte[] data = await FetchCachedImage(cachekey);
