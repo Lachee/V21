@@ -80,14 +80,31 @@ namespace V21Bot.Commands
                     ResponsibleName = ctx.Member.Username
                 };
 
-                await V21.Instance.Redis.ObjectSetAsync(redisKey, enforcement);                
+                await V21.Instance.Redis.ObjectSetAsync(redisKey, enforcement);
                 await member.ModifyAsync(nickname: nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
 
                 await ctx.RespondAsync("The nickname enforcement has been added.");
             }
         }
 
-        [Command("mutechannel")]
+        [Command("welcome")]
+        [Description("Sets the welcome channel of a server")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
+        public async Task SetWelcome(CommandContext ctx, [Description("The channel to send welcomes to. Set to null to remove welcomes.")] DiscordChannel channel)
+        {
+            await V21.Instance.SetWelcomeMessageChannel(ctx.Guild, channel);
+            await ctx.RespondAsync("Welcome message has been " + (channel != null ? $"set to {channel.Mention}." : "removed."));
+        }
+
+        [Command("send_welcome")]
+        [Description("Sends a welcome")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
+        public async Task SetWelcome(CommandContext ctx, [Description("Who to welcome.")] DiscordMember member)
+        {
+            await V21.Instance.SendWelcomeMessage(ctx.Guild, member);
+        }
+
+        [Command("ignore_commands")]
         [Description("Mutes the channel")]
         [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
         [Hidden]

@@ -11,8 +11,17 @@ namespace V21Bot.Helper
 {
     public static class Extensions
     {
+        private static readonly DateTime UnixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
         public static string EmojiYes = ":white_check_mark:";
         public static string EmojiNo = ":x:";
+
+        public static DateTime CreationTime(this DiscordUser user)
+        {
+            ulong discord_epoch = user.Id >> 22;
+            ulong unix_epoch = discord_epoch + 1420070400000L;
+            return UnixEpoch.AddMilliseconds(unix_epoch);
+        }
 
         /// <summary>
         /// Creates a new Discord Message and adds a Yes / No element to it.

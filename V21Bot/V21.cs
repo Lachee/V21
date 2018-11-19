@@ -80,6 +80,7 @@ namespace V21Bot
                 }
             };
 
+            //A member updated
             Discord.GuildMemberUpdated += async (args) =>
             {
                 //Only want this for nickname change
@@ -93,6 +94,12 @@ namespace V21Bot
                 if (enforcement != null && enforcement.Nickname != args.NicknameAfter)
                     await args.Member.ModifyAsync(nickname: enforcement.Nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
                 
+            };
+
+            //A member joined
+            Discord.GuildMemberAdded += async (args) =>
+            {
+                await SendWelcomeMessage(args.Guild, args.Member);
             };
 
             //Create Redis
@@ -135,6 +142,39 @@ namespace V21Bot
         {
             return _mutedChannels.Contains(channel.Id);
         }
+     
+        public async Task SetWelcomeMessageChannel(DiscordGuild guild, DiscordChannel channel)
+        {
+            string key = RedisNamespace.Create(guild.Id, "welcome", "channel");
+            if (channel == null)
+                await Redis.RemoveAsync(key);            
+            else            
+                await Redis.StringSetAsync(key, channel.Id.ToString());
+            
+        }
+        public async Task SendWelcomeMessage(DiscordGuild guild, DiscordMember user)
+        {
+            //Make sure the guild has the welcome message enabled
+            string key = RedisNamespace.Create(guild.Id, "welcome", "channel");
+            string value = await Redis.StringGetAsync(key);
+            if (value != null)
+            {
+                var channel = guild.GetChannel(ulong.Parse(value));
+                await channel.TriggerTypingAsync();
+
+                DiscordEmbedBuilder embed = new DiscordEmbedBuilder();
+                embed.WithColor(DiscordColor.Green)
+                    .WithDescription(
+                        "📥 " + user.Mention + " _has joined the server_."
+                    );
+                embed.WithFooter(text: $"User Joined ({user.Id})", icon_url: $"https://d.lu.je/avatar/{user.Id}");
+
+                var timespan = DateTime.UtcNow - user.CreationTime();
+                if (timespan.TotalDays < 14) embed.AddField("Account Age", timespan.TotalDays.ToString("f1") + " days", true);
+
+                await channel.SendMessageAsync(embed: embed);
+            }
+        }   
         #endregion
 
         #region Commands
