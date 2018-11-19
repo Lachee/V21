@@ -11,15 +11,18 @@ using V21Bot.Imgur;
 using DSharpPlus.Interactivity;
 using V21Bot.Entities;
 using DSharpPlus.Entities;
+using System.Linq;
 
 namespace V21Bot
 {
 	public class V21
 	{
 		public static V21 Instance { get; private set; }
+        private HashSet<ulong> _mutedChannels;
 
 		public DiscordClient Discord { get; }
         public CommandsNextModule Commands { get; }
+
         public InteractivityModule Interactivty { get; }
         public IRedisClient Redis { get; }
         public bool RedisAvailable { get; }
@@ -33,9 +36,10 @@ namespace V21Bot
 		{
 			Instance = this;
 			Config = config;
+            _mutedChannels = new HashSet<ulong>();
 
-			//Setup the token
-			var dconf = new DiscordConfiguration();
+            //Setup the token
+            var dconf = new DiscordConfiguration();
 			dconf.Token = Config.GetDiscordKey();
 			dconf.TokenType = TokenType.Bot;
 
@@ -46,16 +50,18 @@ namespace V21Bot
 
             //Create Commands
             Console.WriteLine("Creating Commands (Prefix: {0})", Config.Prefix);
-			Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { StringPrefix = Config.Prefix });
+            Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { CustomPrefixPredicate = CheckPrefixPredicate });
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
           
+            //Create Interactivity
             Interactivty = Discord.UseInteractivity(new InteractivityConfiguration() {
                 PaginationBehaviour = TimeoutBehaviour.Delete,
                 PaginationTimeout = new TimeSpan(0, 10, 0),
                 Timeout = new TimeSpan(0, 10, 0),
             });
-
+            
+            //Create basic event handlers
             Discord.MessageUpdated += async (args) =>
             {
                 if (args.Author.IsBot) return;
@@ -103,29 +109,94 @@ namespace V21Bot
             }
 
 			//Create Imgur
-			Imgur = new ImgurClient(Config.GetImgurKey());
+			Imgur = new ImgurClient(Config.GetImgurKey());            
 		}
-        
 
+        #region Helpers
+        public async Task MuteChannel(DiscordChannel channel)
+        {
+            _mutedChannels.Add(channel.Id);
+            if (RedisAvailable)
+            {
+                string mutedKey = RedisNamespace.Create("global", "muted");
+                await Redis.SetAddAsync(mutedKey, channel.Id.ToString());
+            }
+        }
+        public async Task UnmuteChannel(DiscordChannel channel)
+        {
+            _mutedChannels.Remove(channel.Id);
+            if (RedisAvailable)
+            {
+                string mutedKey = RedisNamespace.Create("global", "muted");
+                await Redis.SetRemoveAsync(mutedKey, channel.Id.ToString());
+            }
+        }
+        public bool IsChannelMuted(DiscordChannel channel)
+        {
+            return _mutedChannels.Contains(channel.Id);
+        }
+        #endregion
+
+        #region Commands
+        private Task<int> CheckPrefixPredicate(DiscordMessage msg)
+        {
+            try
+            {
+                //Make sure it exists
+                int index = msg.Content.IndexOf(Config.Prefix);
+                if (index < 0) return Task.FromResult(-1);
+
+                //Update the index and offset it by the preficx
+                index += Config.Prefix.Length;
+
+                //We are being told by the owner. Not allowed to ignore
+                if (msg.Author.Id == Owner.Id)
+                    return Task.FromResult(index);
+
+                //We are in a muted channel, so abort
+                if (IsChannelMuted(msg.Channel))
+                    return Task.FromResult(-1);
+
+                //We are fine, so just send the index
+                return Task.FromResult(index);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: " + e.Message);
+                return Task.FromResult(-1);
+            }
+        }
+        #endregion
+
+        #region Initialization
         public async Task Initialize()
 		{
-			//Connect to redis
-            if (RedisAvailable) await Redis.Initialize();
+            //Connect to redis
+            if (RedisAvailable)
+            {
+                //Connect
+                await Redis.Initialize();
+
+                //Load muted channels
+                string mutedKey = RedisNamespace.Create("global", "muted");
+                _mutedChannels = new HashSet<ulong>((await Redis.SetGetAsync(mutedKey)).Select(v => ulong.Parse(v)));
+            }
 
 			//Connect to discord
 			await Discord.ConnectAsync();
 			
 			//Get our user and assign the default avatar
 			ResponseBuilder.DefaultBotImage = ResponseBuilder.AvatarAPI + Discord.CurrentUser.Id;
-
 		}
-		
-
 		public async Task Deinitialize()
 		{
-			Redis.Dispose();
+            if (RedisAvailable)
+            {
+                Redis.Dispose();
+            }
 			await Discord.DisconnectAsync();
 		}
-	}
+        #endregion
+    }
 
 }

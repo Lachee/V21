@@ -42,11 +42,18 @@ namespace V21Bot.Redis
         Task ObjectSetAsync(string key, object obj);
 		Task<T> ObjectGetAsync<T>(string key);
 		 
-		Task<long> SetAddAsync(string key, string value);
-		Task<long> SetAddAsync(string key, params string[] values);
 
-		Task<string> SetGetRandomAsync(string key);
-        Task<string[]> SetGetAllAsync(string key);
+
+		Task<long> SetAddAsync(string key, string value);
+        Task<long> SetAddAsync(string key, params string[] values);
+        Task<long> SetAddAsync(string key, HashSet<string> values);
+
+        Task<bool> SetRemoveAsync(string key, string value);
+
+        Task<string> SetGetRandomAsync(string key);
+        Task<HashSet<string>> SetGetAsync(string key);
+
+
 
         Task<bool> RemoveAsync(string key);
     }

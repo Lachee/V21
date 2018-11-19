@@ -86,5 +86,24 @@ namespace V21Bot.Commands
                 await ctx.RespondAsync("The nickname enforcement has been added.");
             }
         }
+
+        [Command("mutechannel")]
+        [Description("Mutes the channel")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
+        [Hidden]
+        public async Task MuteChannel(CommandContext ctx, [Description("The channel to mute")] DiscordChannel channel, [Description("The mute state of the channel")] bool mute)
+        {
+            await ctx.TriggerTypingAsync();
+            if (mute)
+            {
+                await V21.Instance.MuteChannel(channel);
+                await ctx.RespondAsync(channel.Mention + " has been muted.");
+            }
+            else
+            {
+                await V21.Instance.UnmuteChannel(channel);
+                await ctx.RespondAsync(channel.Mention + " has been unmuted.");
+            }
+        }
     }
 }
