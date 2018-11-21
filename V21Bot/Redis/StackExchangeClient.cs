@@ -25,6 +25,10 @@ namespace V21Bot.Redis
 		public async Task Initialize() => await Task.Delay(0);
 
         #region Utility
+        public async Task ExpireAsync(string key, TimeSpan ttl)
+        {
+            await database.KeyExpireAsync(key, ttl);
+        }
         public async Task<bool> RemoveAsync(string key)
         {
             return await database.KeyDeleteAsync(key);
@@ -201,6 +205,7 @@ namespace V21Bot.Redis
         }
         private Dictionary<string, string> ConvertHashEntries(HashEntry[] entries)
         {
+            if (entries == null) return null;
             Dictionary<string, string> dict = new Dictionary<string, string>(entries.Length);
             foreach (var entry in entries) dict.Add(entry.Name, entry.Value);
             return dict;

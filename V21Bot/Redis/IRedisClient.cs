@@ -53,8 +53,7 @@ namespace V21Bot.Redis
         Task<string> SetGetRandomAsync(string key);
         Task<HashSet<string>> SetGetAsync(string key);
 
-
-
+        Task ExpireAsync(string key, TimeSpan ttl);
         Task<bool> RemoveAsync(string key);
     }
 }
