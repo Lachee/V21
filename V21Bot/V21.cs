@@ -66,6 +66,7 @@ namespace V21Bot
             Discord.MessageCreated += async (evt) =>
             {
                 if (evt.MentionedUsers.Count == 0 && evt.MentionedRoles.Count == 0) return;
+                if (evt.Author.IsBot) return;
 
                 //Prepare namespaces and tll
                 string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
@@ -160,6 +161,7 @@ namespace V21Bot
             //A member joined
             Discord.GuildMemberAdded += async (args) =>
             {
+                await Task.Delay(150);
                 await SendWelcomeMessage(args.Guild, args.Member);
             };
 
