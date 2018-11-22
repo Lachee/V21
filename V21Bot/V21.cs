@@ -54,7 +54,7 @@ namespace V21Bot
             Commands = Discord.UseCommandsNext(new CommandsNextConfiguration() { CustomPrefixPredicate = CheckPrefixPredicate });
 			Commands.RegisterCommands(System.Reflection.Assembly.GetExecutingAssembly());
 			Commands.CommandErrored += async (args) => await args.Context.RespondException(args.Exception);
-          
+            
             //Create Interactivity
             Interactivty = Discord.UseInteractivity(new InteractivityConfiguration() {
                 PaginationBehaviour = TimeoutBehaviour.Delete,
@@ -76,7 +76,9 @@ namespace V21Bot
                 {
                     { "author", evt.Author.Id.ToString() },
                     { "username", evt.Author.Username },
-                    { "content", evt.Message.Content } 
+                    { "content", evt.Message.Content } ,
+                    { "user_c", evt.MentionedUsers.Count.ToString() },
+                    { "roles_c", evt.MentionedRoles.Count.ToString() },
                 });
                 await Redis.ExpireAsync(pingNamespace, TTL);
 
@@ -98,8 +100,25 @@ namespace V21Bot
                     StringBuilder msg = new StringBuilder();
                     msg.AppendLine("👻 **Ghost Ping Detected**");
                     msg.AppendLine(pingCache["content"]);
-                    msg.AppendLine($" > <@{pingCache["author"]}>");
+                    msg.AppendLine($"- <@{pingCache["author"]}>");
                     await evt.Channel.SendMessageAsync(msg.ToString());
+                };
+            };
+
+            Discord.MessageUpdated += async (evt) =>
+            {
+                string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
+                var pingCache = await Redis.HashGetAsync(pingNamespace);
+                if (pingCache != null)
+                {
+                    if (evt.MentionedUsers.Count.ToString() != pingCache["user_c"] || evt.MentionedRoles.Count.ToString() != pingCache["roles_c"])
+                    {
+                        StringBuilder msg = new StringBuilder();
+                        msg.AppendLine("👻 **Ghost Ping Detected**");
+                        msg.AppendLine(pingCache["content"]);
+                        msg.AppendLine($"- <@{pingCache["author"]}>");
+                        await evt.Channel.SendMessageAsync(msg.ToString());
+                    }
                 };
             };
 
