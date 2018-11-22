@@ -67,6 +67,7 @@ namespace V21Bot
             {
                 if (evt.MentionedUsers.Count == 0 && evt.MentionedRoles.Count == 0) return;
                 if (evt.Author.IsBot) return;
+                if (evt.Message.Embeds.Count != 0) return;
 
                 //Prepare namespaces and tll
                 string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
