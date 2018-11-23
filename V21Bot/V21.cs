@@ -63,66 +63,66 @@ namespace V21Bot
             });
 
             //Store pings to prevent ghostings
-            Discord.MessageCreated += async (evt) =>
-            {
-                if (evt.MentionedUsers.Count == 0 && evt.MentionedRoles.Count == 0) return;
-                if (evt.Author.IsBot) return;
-                if (evt.Message.Embeds.Count != 0) return;
-
-                //Prepare namespaces and tll
-                string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-                TimeSpan TTL = new TimeSpan(1, 0, 0, 0, 0);
-
-                //Store all the redis!                
-                await Redis.HashSetAsync(pingNamespace, new Dictionary<string, string>()
-                {
-                    { "author", evt.Author.Id.ToString() },
-                    { "username", evt.Author.Username },
-                    { "content", evt.Message.Content } ,
-                    { "user_c", evt.MentionedUsers.Count.ToString() },
-                    { "roles_c", evt.MentionedRoles.Count.ToString() },
-                });
-                await Redis.ExpireAsync(pingNamespace, TTL);
-
-                //string usersNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "users");
-                //string rolesNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "roles");
-                //await Redis.SetAddAsync(rolesNamespace, evt.MentionedRoles.Select(r => r.Id.ToString()).ToHashSet());
-                //await Redis.ExpireAsync(rolesNamespace, TTL);
-                //await Redis.SetAddAsync(usersNamespace, evt.MentionedUsers.Select(r => r.Id.ToString()).ToHashSet());
-                //await Redis.ExpireAsync(usersNamespace, TTL);
-            };
+            //Discord.MessageCreated += async (evt) =>
+            //{
+            //    if (evt.MentionedUsers.Count == 0 && evt.MentionedRoles.Count == 0) return;
+            //    if (evt.Author.IsBot) return;
+            //    if (evt.Message.Embeds.Count != 0) return;
+            //
+            //    //Prepare namespaces and tll
+            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
+            //    TimeSpan TTL = new TimeSpan(1, 0, 0, 0, 0);
+            //
+            //    //Store all the redis!                
+            //    await Redis.HashSetAsync(pingNamespace, new Dictionary<string, string>()
+            //    {
+            //        { "author", evt.Author.Id.ToString() },
+            //        { "username", evt.Author.Username },
+            //        { "content", evt.Message.Content } ,
+            //        { "user_c", evt.MentionedUsers.Count.ToString() },
+            //        { "roles_c", evt.MentionedRoles.Count.ToString() },
+            //    });
+            //    await Redis.ExpireAsync(pingNamespace, TTL);
+            //
+            //    //string usersNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "users");
+            //    //string rolesNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "roles");
+            //    //await Redis.SetAddAsync(rolesNamespace, evt.MentionedRoles.Select(r => r.Id.ToString()).ToHashSet());
+            //    //await Redis.ExpireAsync(rolesNamespace, TTL);
+            //    //await Redis.SetAddAsync(usersNamespace, evt.MentionedUsers.Select(r => r.Id.ToString()).ToHashSet());
+            //    //await Redis.ExpireAsync(usersNamespace, TTL);
+            //};
 
             //Was a message deleted?
-            Discord.MessageDeleted += async (evt) =>
-            {
-                string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-                var pingCache = await Redis.HashGetAsync(pingNamespace);
-                if (pingCache != null)
-                {
-                    StringBuilder msg = new StringBuilder();
-                    msg.AppendLine("👻 **Ghost Ping Detected**");
-                    msg.AppendLine(pingCache["content"]);
-                    msg.AppendLine($"- <@{pingCache["author"]}>");
-                    await evt.Channel.SendMessageAsync(msg.ToString());
-                };
-            };
+            //Discord.MessageDeleted += async (evt) =>
+            //{
+            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
+            //    var pingCache = await Redis.HashGetAsync(pingNamespace);
+            //    if (pingCache != null)
+            //    {
+            //        StringBuilder msg = new StringBuilder();
+            //        msg.AppendLine("👻 **Ghost Ping Detected**");
+            //        msg.AppendLine(pingCache["content"]);
+            //        msg.AppendLine($"- <@{pingCache["author"]}>");
+            //        await evt.Channel.SendMessageAsync(msg.ToString());
+            //    };
+            //};
 
-            Discord.MessageUpdated += async (evt) =>
-            {
-                string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-                var pingCache = await Redis.HashGetAsync(pingNamespace);
-                if (pingCache != null)
-                {
-                    if (evt.MentionedUsers.Count.ToString() != pingCache["user_c"] || evt.MentionedRoles.Count.ToString() != pingCache["roles_c"])
-                    {
-                        StringBuilder msg = new StringBuilder();
-                        msg.AppendLine("👻 **Ghost Ping Detected**");
-                        msg.AppendLine(pingCache["content"]);
-                        msg.AppendLine($"- <@{pingCache["author"]}>");
-                        await evt.Channel.SendMessageAsync(msg.ToString());
-                    }
-                };
-            };
+            //Discord.MessageUpdated += async (evt) =>
+            //{
+            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
+            //    var pingCache = await Redis.HashGetAsync(pingNamespace);
+            //    if (pingCache != null)
+            //    {
+            //        if (evt.MentionedUsers.Count.ToString() != pingCache["user_c"] || evt.MentionedRoles.Count.ToString() != pingCache["roles_c"])
+            //        {
+            //            StringBuilder msg = new StringBuilder();
+            //            msg.AppendLine("👻 **Ghost Ping Detected**");
+            //            msg.AppendLine(pingCache["content"]);
+            //            msg.AppendLine($"- <@{pingCache["author"]}>");
+            //            await evt.Channel.SendMessageAsync(msg.ToString());
+            //        }
+            //    };
+            //};
 
             //Create basic event handlers
             Discord.MessageUpdated += async (args) =>
