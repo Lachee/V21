@@ -90,14 +90,15 @@ namespace V21Bot.Commands
         [Command("welcome")]
         [Description("Sets the welcome channel of a server")]
         [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
-        public async Task SetWelcome(CommandContext ctx, [Description("The channel to send welcomes to. Set to null to remove welcomes.")] DiscordChannel channel)
+        public async Task SetWelcome(CommandContext ctx, [Description("The channel to send welcomes to. Set to null to remove welcomes.")] DiscordChannel channel, [Description("The message to send. Use {user} for a mention")]  string message)
         {
-            await V21.Instance.SetWelcomeMessageChannel(ctx.Guild, channel);
-            await ctx.RespondAsync("Welcome message has been " + (channel != null ? $"set to {channel.Mention}." : "removed."));
+            await V21.Instance.SetWelcomeMessageChannel(ctx.Guild, channel, message);
+            await ctx.RespondAsync("Welcome message has been " + (channel != null && message != null ? $"set to {channel.Mention} -> {message}." : "removed."));
         }
 
         [Command("send_welcome")]
         [Description("Sends a welcome")]
+        [Hidden]
         [RequirePermissions(DSharpPlus.Permissions.ManageChannels)]
         public async Task SetWelcome(CommandContext ctx, [Description("Who to welcome.")] DiscordMember member)
         {

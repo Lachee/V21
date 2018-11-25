@@ -206,37 +206,21 @@ namespace V21Bot
             return _mutedChannels.Contains(channel.Id);
         }
      
-        public async Task SetWelcomeMessageChannel(DiscordGuild guild, DiscordChannel channel)
+        public async Task SetWelcomeMessageChannel(DiscordGuild guild, DiscordChannel channel, string message)
         {
-            string key = RedisNamespace.Create(guild.Id, "welcome", "channel");
-            if (channel == null)
-                await Redis.RemoveAsync(key);            
-            else            
-                await Redis.StringSetAsync(key, channel.Id.ToString());
+            string key = RedisNamespace.Create(guild.Id, "welcome");
+            if (channel == null || message == null)
+                await Redis.RemoveAsync(key);
+            else
+                await Redis.ObjectSetAsync(key, new WelcomeMessage() { ChannelId = channel.Id, Message = message });
             
         }
-        public async Task SendWelcomeMessage(DiscordGuild guild, DiscordMember user)
+        public async Task SendWelcomeMessage(DiscordGuild guild, DiscordMember member)
         {
             //Make sure the guild has the welcome message enabled
-            string key = RedisNamespace.Create(guild.Id, "welcome", "channel");
-            string value = await Redis.StringGetAsync(key);
-            if (value != null)
-            {
-                var channel = guild.GetChannel(ulong.Parse(value));
-                await channel.TriggerTypingAsync();
-
-                DiscordEmbedBuilder embed = new DiscordEmbedBuilder();
-                embed.WithColor(DiscordColor.Green)
-                    .WithDescription(
-                        $"📥 <@{user.Id} _has joined the server_."
-                    );
-                embed.WithFooter(text: $"User Joined ({user.Id})", icon_url: $"https://d.lu.je/avatar/{user.Id}");
-
-                var timespan = DateTime.UtcNow - user.CreationTime();
-                if (timespan.TotalDays < 14) embed.AddField("Account Age", timespan.TotalDays.ToString("f1") + " days", true);
-
-                await channel.SendMessageAsync(embed: embed);
-            }
+            string key = RedisNamespace.Create(guild.Id, "welcome");
+            WelcomeMessage value = await Redis.ObjectGetAsync<WelcomeMessage>(key);
+            if (value != null) await value.SendWelcome(member);
         }   
         #endregion
 
