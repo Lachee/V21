@@ -245,6 +245,8 @@ namespace V21Bot
         {
             try
             {
+                if (msg.Author.IsBot) return Task.FromResult(-1);
+
                 //Make sure it exists
                 int index = msg.Content.StartsWith(Config.Prefix) ? 0 : -1;
                 if (index < 0) return Task.FromResult(-1);
