@@ -162,7 +162,6 @@ namespace V21Bot
             //A member joined
             Discord.GuildMemberAdded += async (args) =>
             {
-                await Task.Delay(150);
                 await SendWelcomeMessage(args.Guild, args.Member);
             };
 
@@ -229,7 +228,7 @@ namespace V21Bot
                 DiscordEmbedBuilder embed = new DiscordEmbedBuilder();
                 embed.WithColor(DiscordColor.Green)
                     .WithDescription(
-                        "📥 " + user.Mention + " _has joined the server_."
+                        $"📥 <@{user.Id} _has joined the server_."
                     );
                 embed.WithFooter(text: $"User Joined ({user.Id})", icon_url: $"https://d.lu.je/avatar/{user.Id}");
 
@@ -247,7 +246,7 @@ namespace V21Bot
             try
             {
                 //Make sure it exists
-                int index = msg.Content.IndexOf(Config.Prefix);
+                int index = msg.Content.StartsWith(Config.Prefix) ? 0 : -1;
                 if (index < 0) return Task.FromResult(-1);
 
                 //Update the index and offset it by the preficx
