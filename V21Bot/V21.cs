@@ -71,7 +71,7 @@ namespace V21Bot
                     return;
                 }
 
-                if (evt.Message.Content.Contains("deg ") || evt.Message.Content.EndsWith(" deg"))
+                if (evt.Message.Content.Contains("deg ") || evt.Message.Content.TrimEnd('!', '?', '.', ':', '*').EndsWith(" deg"))
                 {
                     await evt.Message.CreateReactionAsync(DiscordEmoji.FromName(Discord, ":dethinks:"));
                     return;
