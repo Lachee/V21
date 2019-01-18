@@ -62,6 +62,22 @@ namespace V21Bot
                 Timeout = new TimeSpan(0, 10, 0),
             });
 
+            Discord.MessageCreated += async (evt) =>
+            {
+                if (evt.Message.Author.IsBot) return;
+                if (evt.Message.Content.Contains("Deg*") || evt.Message.Content.Contains("Degranon*"))
+                {
+                    await evt.Channel.SendMessageAsync("deg*");
+                    return;
+                }
+
+                if (evt.Message.Content.Contains("deg "))
+                {
+                    await evt.Message.CreateReactionAsync(DiscordEmoji.FromName(Discord, ":dethinks:"));
+                    return;
+                }
+            };
+
             //Store pings to prevent ghostings
             //Discord.MessageCreated += async (evt) =>
             //{
