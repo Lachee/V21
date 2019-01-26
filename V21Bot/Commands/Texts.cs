@@ -15,45 +15,101 @@ using System.Text.RegularExpressions;
 
 namespace V21Bot.Commands
 {
-	public class Texts
-	{
-		/// <summary>
-		/// Mapping of all the characters from ASCII to AESTHETIC with extra THICCC
-		/// </summary>
-		private readonly Dictionary<char, char> AestheticMap = new Dictionary<char, char>()
-		{
-			{ ' ', '　' }, 
+    public class Texts
+    {
+        /// <summary>
+        /// Mapping of all the characters from ASCII to AESTHETIC with extra THICCC
+        /// </summary>
+        private readonly Dictionary<char, char> AestheticMap = new Dictionary<char, char>()
+        {
+            { ' ', '　' },
 
-			{ 'a', 'ａ' }, { 'g', 'ｇ' }, { 'm', 'ｍ' }, { 's', 'ｓ' },
-			{ 'b', 'ｂ' }, { 'h', 'ｈ' }, { 'n', 'ｎ' }, { 't', 'ｔ' },
-			{ 'c', 'ｃ' }, { 'i', 'ｉ' }, { 'o', 'ｏ' }, { 'u', 'ｕ' },
-			{ 'd', 'ｄ' }, { 'j', 'ｊ' }, { 'p', 'ｐ' }, { 'v', 'ｖ' },
-			{ 'e', 'ｅ' }, { 'k', 'ｋ' }, { 'q', 'ｑ' }, { 'w', 'ｗ' },
-			{ 'f', 'ｆ' }, { 'l', 'ｌ' }, { 'r', 'ｒ' }, { 'x', 'ｘ' },
-			{ 'y', 'ｙ' }, { 'z', 'ｚ' },
+            { 'a', 'ａ' }, { 'g', 'ｇ' }, { 'm', 'ｍ' }, { 's', 'ｓ' },
+            { 'b', 'ｂ' }, { 'h', 'ｈ' }, { 'n', 'ｎ' }, { 't', 'ｔ' },
+            { 'c', 'ｃ' }, { 'i', 'ｉ' }, { 'o', 'ｏ' }, { 'u', 'ｕ' },
+            { 'd', 'ｄ' }, { 'j', 'ｊ' }, { 'p', 'ｐ' }, { 'v', 'ｖ' },
+            { 'e', 'ｅ' }, { 'k', 'ｋ' }, { 'q', 'ｑ' }, { 'w', 'ｗ' },
+            { 'f', 'ｆ' }, { 'l', 'ｌ' }, { 'r', 'ｒ' }, { 'x', 'ｘ' },
+            { 'y', 'ｙ' }, { 'z', 'ｚ' },
 
-			{ 'A', 'Ａ' }, { 'G', 'Ｇ' }, { 'M', 'Ｍ' }, { 'S', 'Ｓ' },
-			{ 'B', 'Ｂ' }, { 'H', 'Ｈ' }, { 'N', 'Ｎ' }, { 'T', 'Ｔ' },
-			{ 'C', 'Ｃ' }, { 'I', 'Ｉ' }, { 'O', 'Ｏ' }, { 'U', 'Ｕ' },
-			{ 'D', 'Ｄ' }, { 'J', 'Ｊ' }, { 'P', 'Ｐ' }, { 'V', 'Ｖ' },
-			{ 'E', 'Ｅ' }, { 'K', 'Ｋ' }, { 'Q', 'Ｑ' }, { 'W', 'Ｗ' },
-			{ 'F', 'Ｆ' }, { 'L', 'Ｌ' }, { 'R', 'Ｒ' }, { 'X', 'Ｘ' },
-			{ 'Y', 'Ｙ' }, { 'Z', 'Ｚ' },
+            { 'A', 'Ａ' }, { 'G', 'Ｇ' }, { 'M', 'Ｍ' }, { 'S', 'Ｓ' },
+            { 'B', 'Ｂ' }, { 'H', 'Ｈ' }, { 'N', 'Ｎ' }, { 'T', 'Ｔ' },
+            { 'C', 'Ｃ' }, { 'I', 'Ｉ' }, { 'O', 'Ｏ' }, { 'U', 'Ｕ' },
+            { 'D', 'Ｄ' }, { 'J', 'Ｊ' }, { 'P', 'Ｐ' }, { 'V', 'Ｖ' },
+            { 'E', 'Ｅ' }, { 'K', 'Ｋ' }, { 'Q', 'Ｑ' }, { 'W', 'Ｗ' },
+            { 'F', 'Ｆ' }, { 'L', 'Ｌ' }, { 'R', 'Ｒ' }, { 'X', 'Ｘ' },
+            { 'Y', 'Ｙ' }, { 'Z', 'Ｚ' },
 
-			{ '0', '０' }, { '!', '！' }, { '5', '５' }, { '^', '＾' },
-			{ '1', '１' }, { '@', '＠' }, { '6', '６' }, { '&', '＆' },
-			{ '2', '２' }, { '#', '＃' }, { '7', '７' }, { '*', '＊' },
-			{ '3', '３' }, { '$', '＄' }, { '8', '８' }, { '(', '（' },
-			{ '4', '４' }, { '%', '％' }, { '9', '９' }, { ')', '）' },		
+            { '0', '０' }, { '!', '！' }, { '5', '５' }, { '^', '＾' },
+            { '1', '１' }, { '@', '＠' }, { '6', '６' }, { '&', '＆' },
+            { '2', '２' }, { '#', '＃' }, { '7', '７' }, { '*', '＊' },
+            { '3', '３' }, { '$', '＄' }, { '8', '８' }, { '(', '（' },
+            { '4', '４' }, { '%', '％' }, { '9', '９' }, { ')', '）' },
 
-			{ '-', '－' }, { '_', '＿' }, { '<', '＜' }, { '>', '＞' },
-			{ '+', '＋' }, { '=', '＝' }, { '\\', '＼' }, { '|', '｜' },
-			{ '[', '［' }, { ']', '］' }, { '/', '／' }, { '?', '？' },
-			{ '{', '｛' }, { '}', '｝' }, { '"', '＂' }, { '\'', '＇' },
-			{ '.', '．' }, { ',', '，' }, { ':', '：' }, { ';', '；' },
-		};
-		private readonly Regex DiceRegex = new Regex(@"(?'count'\d{1,2})[dD](?'sides'\d{1,3})", RegexOptions.Compiled);
-        
+            { '-', '－' }, { '_', '＿' }, { '<', '＜' }, { '>', '＞' },
+            { '+', '＋' }, { '=', '＝' }, { '\\', '＼' }, { '|', '｜' },
+            { '[', '［' }, { ']', '］' }, { '/', '／' }, { '?', '？' },
+            { '{', '｛' }, { '}', '｝' }, { '"', '＂' }, { '\'', '＇' },
+            { '.', '．' }, { ',', '，' }, { ':', '：' }, { ';', '；' },
+        };
+        private readonly Regex DiceRegex = new Regex(@"(?'count'\d{1,2})[dD](?'sides'\d{1,3})", RegexOptions.Compiled);
+
+        [Command("vote")]
+        public async Task Vote(CommandContext ctx, DiscordChannel channel, int amount, [RemainingText] string content)
+        {
+            string[] emojis = new string[] 
+            {
+                ":regional_indicator_a:",                
+                ":regional_indicator_b:",
+                ":regional_indicator_c:",
+                ":regional_indicator_d:",
+                ":regional_indicator_e:",
+                ":regional_indicator_f:",
+                ":regional_indicator_g:",
+                ":regional_indicator_h:",
+                ":regional_indicator_i:",
+                ":regional_indicator_j:",
+                ":regional_indicator_k:",
+                ":regional_indicator_l:",
+                ":regional_indicator_m:",
+                ":regional_indicator_n:",
+                ":regional_indicator_o:",
+                ":regional_indicator_p:",
+                ":regional_indicator_q:",
+                ":regional_indicator_r:",
+                ":regional_indicator_s:",
+                ":regional_indicator_t:",
+                ":regional_indicator_u:",
+                ":regional_indicator_v:",
+                ":regional_indicator_w:",
+                ":regional_indicator_x:",
+                ":regional_indicator_y:",
+                ":regional_indicator_z:"
+            };
+
+            if (amount > emojis.Length)
+            {
+                await ctx.RespondException("Max vote length is " + emojis.Length);
+                return;
+            }
+
+            if (channel == null)
+            {
+                await ctx.RespondException("Channel cannot be null");
+                return;
+            }
+
+            //Post the message
+            await ctx.RespondAsync("Working...");
+            var message = await channel.SendMessageAsync(content);
+            for (int i = 0; i < amount; i++)
+            {
+                DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, emojis[i]);
+                await message.CreateReactionAsync(emoji);
+            }
+
+            await ctx.RespondAsync("Done!");  
+        }
 
         [Command("rate")]
         [Description("Rates a user")]
