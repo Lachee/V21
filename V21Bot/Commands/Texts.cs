@@ -54,12 +54,12 @@ namespace V21Bot.Commands
         };
         private readonly Regex DiceRegex = new Regex(@"(?'count'\d{1,2})[dD](?'sides'\d{1,3})", RegexOptions.Compiled);
 
-        [Command("vote")]
-        public async Task Vote(CommandContext ctx, DiscordChannel channel, int amount, [RemainingText] string content)
+        [Command("vote-react")]
+        public async Task ReactVote(CommandContext ctx, DiscordMessage message, int amount)
         {
-            string[] emojis = new string[] 
-            {
-                ":regional_indicator_a:",                
+            string[] emojis = new string[]
+               {
+                ":regional_indicator_a:",
                 ":regional_indicator_b:",
                 ":regional_indicator_c:",
                 ":regional_indicator_d:",
@@ -85,7 +85,7 @@ namespace V21Bot.Commands
                 ":regional_indicator_x:",
                 ":regional_indicator_y:",
                 ":regional_indicator_z:"
-            };
+               };
 
             if (amount > emojis.Length)
             {
@@ -93,6 +93,18 @@ namespace V21Bot.Commands
                 return;
             }
 
+            await ctx.RespondAsync("Working...");
+            for (int i = 0; i < amount; i++)
+            {
+                DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, emojis[i]);
+                await message.CreateReactionAsync(emoji);
+            }
+            await ctx.RespondAsync("Done!");
+        }
+
+        [Command("vote")]
+        public async Task Vote(CommandContext ctx, DiscordChannel channel, int amount, [RemainingText] string content)
+        {            
             if (channel == null)
             {
                 await ctx.RespondException("Channel cannot be null");
@@ -100,15 +112,8 @@ namespace V21Bot.Commands
             }
 
             //Post the message
-            await ctx.RespondAsync("Working...");
             var message = await channel.SendMessageAsync(content);
-            for (int i = 0; i < amount; i++)
-            {
-                DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, emojis[i]);
-                await message.CreateReactionAsync(emoji);
-            }
-
-            await ctx.RespondAsync("Done!");  
+            await ReactVote(ctx, message, amount);
         }
 
         [Command("rate")]
