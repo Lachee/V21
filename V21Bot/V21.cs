@@ -65,12 +65,6 @@ namespace V21Bot
             Discord.MessageCreated += async (evt) =>
             {
                 if (evt.Message.Author.IsBot) return;
-                if (evt.Message.Content.Contains("Deg*") || evt.Message.Content.Contains("Degranon*"))
-                {
-                    await evt.Channel.SendMessageAsync("deg*");
-                    return;
-                }
-
                 if (evt.Message.Content.Contains("deg ") || evt.Message.Content.TrimEnd('!', '?', '.', ':', '*').EndsWith(" deg"))
                 {
                     await evt.Message.CreateReactionAsync(DiscordEmoji.FromName(Discord, ":dethinks:"));
