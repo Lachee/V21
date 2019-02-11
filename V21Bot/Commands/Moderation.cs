@@ -155,7 +155,7 @@ namespace V21Bot.Commands
 
             //Replace their IDS
             await member.ReplaceRolesAsync(new DiscordRole[] { muteRole }, "Muted by " + ctx.Member + ": " + reason);
-            await ctx.RespondAsync("The member " + ctx.Member.Mention + " has been muted. " + (!string.IsNullOrWhiteSpace(reason) ? reason : ""));
+            await ctx.RespondAsync("The member " + member.Mention + " has been muted. " + (!string.IsNullOrWhiteSpace(reason) ? reason : ""));
         }
 
         [Command("unmute")]
@@ -196,7 +196,7 @@ namespace V21Bot.Commands
 
             //Replace their IDS
             await member.ReplaceRolesAsync(roles, "Unmuted by " + ctx.Member);
-            await ctx.RespondAsync("The member " + ctx.Member.Mention + " has been unmuted. ");
+            await ctx.RespondAsync("The member " + member.Mention + " has been unmuted. ");
         }
 
         [Command("muterole")]
