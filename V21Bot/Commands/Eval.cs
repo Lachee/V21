@@ -456,7 +456,7 @@ namespace V21Bot.Commands
         public async Task<string> GetRoles(ulong memberID)
         {
             var member = await guild.GetMemberAsync(memberID);
-            return string.Join("\r\n", member.Roles.Select(r => r.Name));
+            return string.Join("\r\n", member.Roles.Select(r => r.Id + "\t" + r.Name));
         }
 
 		public async Task<DiscordMessage> Respond(string content = null, DiscordEmbed embed = null) { return await ctx.RespondAsync(content: content, embed: embed); }

@@ -24,6 +24,15 @@ namespace V21Bot.Helper
         }
 
         /// <summary>
+        /// Gets a guild member based of a discord user.
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public static async Task<DiscordMember> GetMemberAsync(this DiscordGuild guild, DiscordUser user) => await guild.GetMemberAsync(user.Id);
+        
+
+        /// <summary>
         /// Creates a new Discord Message and adds a Yes / No element to it.
         /// </summary>
         /// <param name="ctx"></param>

@@ -62,6 +62,7 @@ namespace V21Bot
                 Timeout = new TimeSpan(0, 10, 0),
             });
 
+            //The deg think feature
             Discord.MessageCreated += async (evt) =>
             {
                 if (evt.Message.Author.IsBot) return;
@@ -69,6 +70,37 @@ namespace V21Bot
                 {
                     await evt.Message.CreateReactionAsync(DiscordEmoji.FromName(Discord, ":dethinks:"));
                     return;
+                }
+            };
+
+            //The rolemap feature
+            Discord.MessageReactionAdded += async (evt) =>
+            {
+                string key = RedisNamespace.Create(evt.Channel.GuildId, "rolemap", evt.Message.Id, evt.Emoji.Id);
+
+                string roleString = await Redis.StringGetAsync(key);
+                ulong roleId;
+                DiscordRole role;
+
+                if (roleString != null && ulong.TryParse(roleString, out roleId) && (role = evt.Channel.Guild.GetRole(roleId)) != null)
+                {
+                    var member = await evt.Channel.Guild.GetMemberAsync(evt.User);
+                    member?.GrantRoleAsync(role, "Rolemap Reaction");
+                }
+            };
+
+            Discord.MessageReactionRemoved += async (evt) =>
+            {
+                string key = RedisNamespace.Create(evt.Channel.GuildId, "rolemap", evt.Message.Id, evt.Emoji.Id);
+
+                string roleString = await Redis.StringGetAsync(key);
+                ulong roleId;
+                DiscordRole role;
+
+                if (roleString != null && ulong.TryParse(roleString, out roleId) && (role = evt.Channel.Guild.GetRole(roleId)) != null)
+                {
+                    var member = await evt.Channel.Guild.GetMemberAsync(evt.User);
+                    member?.RevokeRoleAsync(role, "Rolemap Reaction");
                 }
             };
 

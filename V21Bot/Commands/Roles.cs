@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using V21Bot.Helper;
+using V21Bot.Redis;
+using DSharpPlus;
 
 namespace V21Bot.Commands
 {
@@ -89,6 +92,42 @@ namespace V21Bot.Commands
 			await ctx.RespondAsync("Assigned the role for you " + ctx.User.Mention, embed: builder);
 		}
 
+        [Command("rolemap")]
+        [Aliases("rm")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageRoles)]
+        [Description("Maps a reaction to a role on a message")]
+        public async Task RoleMap(CommandContext ctx, DiscordMessage message, DiscordEmoji emoji, DiscordRole role, bool remove = false)
+        {
+            if (!V21.Instance.RedisAvailable)
+            {
+                await ctx.RespondException("Cannot create mapping because redis is unavailable.");
+                return;
+            }
+
+            var guildEmoji = GetGuildEmoji(ctx.Client, emoji);
+            if (guildEmoji == null)
+            {
+                await ctx.RespondException("Cannot create that mapping because I do not have access to that emoji. Is it from another guild?");
+                return;
+            }
+
+            await ctx.TriggerTypingAsync();
+            var redis = V21.Instance.Redis;
+            string key = RedisNamespace.Create(ctx.Guild.Id, "rolemap", message.Id, emoji.Id);
+
+            if (remove)
+            {
+                await redis.RemoveAsync(key);
+                await message.DeleteOwnReactionAsync(emoji);
+            }
+            else
+            {
+                await redis.StringSetAsync(key, role.Id.ToString());
+                await message.CreateReactionAsync(emoji);
+                await ctx.RespondAsync("Added mapping for emoji " + emoji + " to role " + role.Name);
+            }
+        }
+
 		public static byte[] StringToByteArray(string hex)
 		{
 			if (hex.Length <= 1) return new byte[0];
@@ -98,7 +137,6 @@ namespace V21Bot.Commands
 			for (int i = 0; i < NumberChars; i += 2) bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
 			return bytes;
 		}
-
 		public static byte RoundTo(int value, int to)
 		{
 			double div = value / (double)to;
@@ -106,6 +144,12 @@ namespace V21Bot.Commands
 			double res = round * to;
 			return (byte) Math.Clamp(res, 0, 255);
 		}
-	}
+
+        private DiscordEmoji GetGuildEmoji(DiscordClient client, DiscordEmoji emoji)
+        {
+            if (!emoji.RequireColons) return emoji;
+            return DiscordEmoji.FromGuildEmote(client, emoji.Id);
+        }
+    }
 
 }
