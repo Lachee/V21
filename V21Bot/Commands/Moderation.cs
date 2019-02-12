@@ -40,7 +40,7 @@ namespace V21Bot.Commands
                 await ctx.TriggerTypingAsync();
 
                 //Get the enforcement first
-                EnforcedNickname enforcement = await V21.Instance.Redis.ObjectGetAsync<EnforcedNickname>(redisKey);
+                EnforcedNickname enforcement = await V21.Instance.Redis.FetchObjectAsync<EnforcedNickname>(redisKey);
                 if (enforcement == null)
                 {
                     await ctx.RespondException("Cannot remove the nickname enforcement as it does not exist.");
@@ -80,7 +80,7 @@ namespace V21Bot.Commands
                     ResponsibleName = ctx.Member.Username
                 };
 
-                await V21.Instance.Redis.ObjectSetAsync(redisKey, enforcement);
+                await V21.Instance.Redis.StoreObjectAsync(redisKey, enforcement);
                 await member.ModifyAsync(nickname: nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
 
                 await ctx.RespondAsync("The nickname enforcement has been added.");
@@ -124,6 +124,8 @@ namespace V21Bot.Commands
             }
         }
 
+
+
         [Command("mute")]
         [Aliases("bb", "blackbacon")]
         [RequirePermissions(DSharpPlus.Permissions.MuteMembers)]
@@ -136,25 +138,13 @@ namespace V21Bot.Commands
                 return;
             }
 
-            var muteKey = RedisNamespace.Create(ctx.Guild.Id, "moderation", "muterole");
-            var muteRoleIdString = await V21.Instance.Redis.StringGetAsync(muteKey, null);
-            ulong muteRoleId;
-            DiscordRole muteRole;
-            if (muteRoleIdString == null || !ulong.TryParse(muteRoleIdString, out muteRoleId) || (muteRole = ctx.Guild.GetRole(muteRoleId)) == null)
+            if (!await member.MuteAsync("Muted by " + ctx.Member + ": " + reason))
             {
-                await ctx.RespondException("Unable to perform mute because no mute role was setup.");
+                await ctx.RespondException("Failed to mute the member. Is the mute feature properly configured?");
                 return;
             }
 
 
-            //Store previous, removing the BB if they already have one.
-            var previousKey = RedisNamespace.Create(ctx.Guild.Id, "moderation", member.Id, "premute");
-            var previous = member.Roles.Select(r => r.Id.ToString()).ToHashSet();
-            previous.Remove(muteRoleIdString);
-            await V21.Instance.Redis.SetAddAsync(previousKey, previous);
-
-            //Replace their IDS
-            await member.ReplaceRolesAsync(new DiscordRole[] { muteRole }, "Muted by " + ctx.Member + ": " + reason);
             await ctx.RespondAsync("The member " + member.Mention + " has been muted. " + (!string.IsNullOrWhiteSpace(reason) ? reason : ""));
         }
 
@@ -170,32 +160,12 @@ namespace V21Bot.Commands
                 return;
             }
 
-            //Get the unmute ready
-            var muteKey = RedisNamespace.Create(ctx.Guild.Id, "moderation", "muterole");
-            var muteRoleIdString = await V21.Instance.Redis.StringGetAsync(muteKey, null);
-            ulong muteRoleId;
-            DiscordRole muteRole;
-            if (muteRoleIdString == null || !ulong.TryParse(muteRoleIdString, out muteRoleId) || (muteRole = ctx.Guild.GetRole(muteRoleId)) == null)
+            if (!await member.UnmuteAsync("Unmuted by " + ctx.Member))
             {
-                await ctx.RespondException("Unable to perform mute because no mute role was setup.");
+                await ctx.RespondException("Failed to unmute the member. Is the mute feature properly configured?");
                 return;
             }
 
-
-            //Store previous, removing the BB if they already have one.
-            var previousKey = RedisNamespace.Create(ctx.Guild.Id, "moderation", member.Id, "premute");
-            var previousRoles = await V21.Instance.Redis.SetGetAsync(previousKey);
-            if (previousRoles == null || previousRoles.Count == 0)
-            {
-                await ctx.RespondAsync("Failed to resolve unmute. The user had no previous roles?");
-                return;
-            }
-
-            //Get all the other roles
-            var roles = ctx.Guild.Roles.Where(r => previousRoles.Contains(r.Id.ToString()));
-
-            //Replace their IDS
-            await member.ReplaceRolesAsync(roles, "Unmuted by " + ctx.Member);
             await ctx.RespondAsync("The member " + member.Mention + " has been unmuted. ");
         }
 
@@ -205,8 +175,7 @@ namespace V21Bot.Commands
         public async Task RemoveMute(CommandContext ctx, DiscordRole role)
         {
             //Get the unmute ready
-            var muteKey = RedisNamespace.Create(ctx.Guild.Id, "moderation", "muterole");
-            await V21.Instance.Redis.StringSetAsync(muteKey, role.Id.ToString());            
+            await ctx.Guild.SetMuteRoleAsync(role);
             await ctx.RespondAsync("The role " + role + " is now the mute role.");
         }
 

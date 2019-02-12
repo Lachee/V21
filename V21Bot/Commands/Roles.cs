@@ -122,7 +122,7 @@ namespace V21Bot.Commands
             }
             else
             {
-                await redis.StringSetAsync(key, role.Id.ToString());
+                await redis.StoreStringAsync(key, role.Id.ToString());
                 await message.CreateReactionAsync(emoji);
                 await ctx.RespondAsync("Added mapping for emoji " + emoji + " to role " + role.Name);
             }

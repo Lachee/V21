@@ -33,27 +33,24 @@ namespace V21Bot.Redis
 	{
 		Task Initialize();
 
-		Task StringSetAsync(string key, string value, TimeSpan? TTL = null);
-		Task<string> StringGetAsync(string key, string @default = null);
+		Task StoreStringAsync(string key, string value, TimeSpan? TTL = null);
+		Task<string> FetchStringAsync(string key, string @default = null);
 
-		Task HashSetAsync(string key, Dictionary<string, string> values);
-        Task<Dictionary<string, string>> HashGetAsync(string key);
+		Task StoreHashMapAsync(string key, Dictionary<string, string> values);
+        Task<Dictionary<string, string>> FetchHashMapAsync(string key);		
+        Task StoreObjectAsync(string key, object obj);
+		Task<T> FetchObjectAsync<T>(string key);
 		
-        Task ObjectSetAsync(string key, object obj);
-		Task<T> ObjectGetAsync<T>(string key);
-		 
+		Task<long> AddHashSetAsync(string key, string value);
+        Task<long> AddHashSetAsync(string key, params string[] values);
+        Task<long> AddHashSetAsync(string key, HashSet<string> values);
+        Task<bool> RemoveHashSetASync(string key, string value);
 
+        Task<string> FetchRandomHashSetElementAsync(string key);
+        Task<HashSet<string>> FetchHashSetAsync(string key);
 
-		Task<long> SetAddAsync(string key, string value);
-        Task<long> SetAddAsync(string key, params string[] values);
-        Task<long> SetAddAsync(string key, HashSet<string> values);
-
-        Task<bool> SetRemoveAsync(string key, string value);
-
-        Task<string> SetGetRandomAsync(string key);
-        Task<HashSet<string>> SetGetAsync(string key);
-
-        Task ExpireAsync(string key, TimeSpan ttl);
+        Task SetExpiryAsync(string key, TimeSpan ttl);
         Task<bool> RemoveAsync(string key);
+        Task<bool> ExistsAsync(string key);
     }
 }

@@ -78,7 +78,7 @@ namespace V21Bot
             {
                 string key = RedisNamespace.Create(evt.Channel.GuildId, "rolemap", evt.Message.Id, evt.Emoji.Id);
 
-                string roleString = await Redis.StringGetAsync(key);
+                string roleString = await Redis.FetchStringAsync(key);
                 ulong roleId;
                 DiscordRole role;
 
@@ -93,7 +93,7 @@ namespace V21Bot
             {
                 string key = RedisNamespace.Create(evt.Channel.GuildId, "rolemap", evt.Message.Id, evt.Emoji.Id);
 
-                string roleString = await Redis.StringGetAsync(key);
+                string roleString = await Redis.FetchStringAsync(key);
                 ulong roleId;
                 DiscordRole role;
 
@@ -103,70 +103,8 @@ namespace V21Bot
                     member?.RevokeRoleAsync(role, "Rolemap Reaction");
                 }
             };
-
-            //Store pings to prevent ghostings
-            //Discord.MessageCreated += async (evt) =>
-            //{
-            //    if (evt.MentionedUsers.Count == 0 && evt.MentionedRoles.Count == 0) return;
-            //    if (evt.Author.IsBot) return;
-            //    if (evt.Message.Embeds.Count != 0) return;
-            //
-            //    //Prepare namespaces and tll
-            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-            //    TimeSpan TTL = new TimeSpan(1, 0, 0, 0, 0);
-            //
-            //    //Store all the redis!                
-            //    await Redis.HashSetAsync(pingNamespace, new Dictionary<string, string>()
-            //    {
-            //        { "author", evt.Author.Id.ToString() },
-            //        { "username", evt.Author.Username },
-            //        { "content", evt.Message.Content } ,
-            //        { "user_c", evt.MentionedUsers.Count.ToString() },
-            //        { "roles_c", evt.MentionedRoles.Count.ToString() },
-            //    });
-            //    await Redis.ExpireAsync(pingNamespace, TTL);
-            //
-            //    //string usersNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "users");
-            //    //string rolesNamespace = RedisNamespace.Create(evt.Guild.Id, evt.Message.Id, "roles");
-            //    //await Redis.SetAddAsync(rolesNamespace, evt.MentionedRoles.Select(r => r.Id.ToString()).ToHashSet());
-            //    //await Redis.ExpireAsync(rolesNamespace, TTL);
-            //    //await Redis.SetAddAsync(usersNamespace, evt.MentionedUsers.Select(r => r.Id.ToString()).ToHashSet());
-            //    //await Redis.ExpireAsync(usersNamespace, TTL);
-            //};
-
-            //Was a message deleted?
-            //Discord.MessageDeleted += async (evt) =>
-            //{
-            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-            //    var pingCache = await Redis.HashGetAsync(pingNamespace);
-            //    if (pingCache != null)
-            //    {
-            //        StringBuilder msg = new StringBuilder();
-            //        msg.AppendLine("👻 **Ghost Ping Detected**");
-            //        msg.AppendLine(pingCache["content"]);
-            //        msg.AppendLine($"- <@{pingCache["author"]}>");
-            //        await evt.Channel.SendMessageAsync(msg.ToString());
-            //    };
-            //};
-
-            //Discord.MessageUpdated += async (evt) =>
-            //{
-            //    string pingNamespace = RedisNamespace.Create(evt.Guild.Id, "pings", evt.Message.Id);
-            //    var pingCache = await Redis.HashGetAsync(pingNamespace);
-            //    if (pingCache != null)
-            //    {
-            //        if (evt.MentionedUsers.Count.ToString() != pingCache["user_c"] || evt.MentionedRoles.Count.ToString() != pingCache["roles_c"])
-            //        {
-            //            StringBuilder msg = new StringBuilder();
-            //            msg.AppendLine("👻 **Ghost Ping Detected**");
-            //            msg.AppendLine(pingCache["content"]);
-            //            msg.AppendLine($"- <@{pingCache["author"]}>");
-            //            await evt.Channel.SendMessageAsync(msg.ToString());
-            //        }
-            //    };
-            //};
-
-            //Create basic event handlers
+            
+            //Command handling (mute channels and re-executing)
             Discord.MessageUpdated += async (args) =>
             {
                 if (args.Author.IsBot) return;
@@ -189,22 +127,47 @@ namespace V21Bot
             Discord.GuildMemberUpdated += async (args) =>
             {
                 //Only want this for nickname change
-                if (args.NicknameAfter == args.NicknameBefore) return;
+                if (args.NicknameAfter != args.NicknameBefore)
+                {
 
-                //Check if the element exists
-                string redisNamespace = EnforcedNickname.GetRedisNamespace(args.Guild, args.Member);
-                EnforcedNickname enforcement = await Redis.ObjectGetAsync<EnforcedNickname>(redisNamespace);
+                    //Check if the element exists
+                    string redisNamespace = EnforcedNickname.GetRedisNamespace(args.Guild, args.Member);
+                    EnforcedNickname enforcement = await Redis.FetchObjectAsync<EnforcedNickname>(redisNamespace);
 
-                //Update the nickname if it does
-                if (enforcement != null && enforcement.Nickname != args.NicknameAfter)
-                    await args.Member.ModifyAsync(nickname: enforcement.Nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
-                
+                    //Update the nickname if it does
+                    if (enforcement != null && enforcement.Nickname != args.NicknameAfter)
+                        await args.Member.ModifyAsync(nickname: enforcement.Nickname, reason: $"Nickname enforcement by {enforcement.ResponsibleName}");
+                }
+
+                //Only want this for role change
+                if (args.RolesBefore != args.RolesAfter)
+                {
+                    bool ismuted = await args.Member.IsMutedAsync();
+                    if (ismuted)
+                    {
+                        var muteRole = await args.Guild.GetMuteRoleAsync();
+                        if (args.RolesAfter.Count != 1 || !args.RolesAfter.Contains(muteRole))
+                        {
+                            Console.WriteLine("Re-Enforcing Mute of " + args.Member.Username + ". They changed their roles.");
+                            await args.Member.MuteAsync("Mute evasion by role change.", false);
+                        }
+                    }
+                }
             };
 
             //A member joined
             Discord.GuildMemberAdded += async (args) =>
             {
+                //Send the welcome message
                 await SendWelcomeMessage(args.Guild, args.Member);
+
+                //Check if they need to be muted
+                bool ismuted = await args.Member.IsMutedAsync();
+                if (ismuted)
+                {
+                    Console.WriteLine("Re-Enforcing Mute of " + args.Member.Username + ". They rejoined.");
+                    await args.Member.MuteAsync("MUte evasion by leave.", false);
+                }
             };
 
             //Create Redis
@@ -225,13 +188,14 @@ namespace V21Bot
 		}
 
         #region Helpers
+
         public async Task MuteChannel(DiscordChannel channel)
         {
             _mutedChannels.Add(channel.Id);
             if (RedisAvailable)
             {
                 string mutedKey = RedisNamespace.Create("global", "muted");
-                await Redis.SetAddAsync(mutedKey, channel.Id.ToString());
+                await Redis.AddHashSetAsync(mutedKey, channel.Id.ToString());
             }
         }
         public async Task UnmuteChannel(DiscordChannel channel)
@@ -240,7 +204,7 @@ namespace V21Bot
             if (RedisAvailable)
             {
                 string mutedKey = RedisNamespace.Create("global", "muted");
-                await Redis.SetRemoveAsync(mutedKey, channel.Id.ToString());
+                await Redis.RemoveHashSetASync(mutedKey, channel.Id.ToString());
             }
         }
         public bool IsChannelMuted(DiscordChannel channel)
@@ -254,14 +218,14 @@ namespace V21Bot
             if (channel == null || message == null)
                 await Redis.RemoveAsync(key);
             else
-                await Redis.ObjectSetAsync(key, new WelcomeMessage() { ChannelId = channel.Id, Message = message });
+                await Redis.StoreObjectAsync(key, new WelcomeMessage() { ChannelId = channel.Id, Message = message });
             
         }
         public async Task SendWelcomeMessage(DiscordGuild guild, DiscordMember member)
         {
             //Make sure the guild has the welcome message enabled
             string key = RedisNamespace.Create(guild.Id, "welcome");
-            WelcomeMessage value = await Redis.ObjectGetAsync<WelcomeMessage>(key);
+            WelcomeMessage value = await Redis.FetchObjectAsync<WelcomeMessage>(key);
             if (value != null) await value.SendWelcome(member);
         }   
         #endregion
@@ -310,7 +274,7 @@ namespace V21Bot
 
                 //Load muted channels
                 string mutedKey = RedisNamespace.Create("global", "muted");
-                _mutedChannels = new HashSet<ulong>((await Redis.SetGetAsync(mutedKey)).Select(v => ulong.Parse(v)));
+                _mutedChannels = new HashSet<ulong>((await Redis.FetchHashSetAsync(mutedKey)).Select(v => ulong.Parse(v)));
             }
 
 			//Connect to discord

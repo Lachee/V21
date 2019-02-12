@@ -25,7 +25,7 @@ namespace V21Bot.Redis
 		public async Task Initialize() => await Task.Delay(0);
 
         #region Utility
-        public async Task ExpireAsync(string key, TimeSpan ttl)
+        public async Task SetExpiryAsync(string key, TimeSpan ttl)
         {
             await database.KeyExpireAsync(key, ttl);
         }
@@ -33,14 +33,18 @@ namespace V21Bot.Redis
         {
             return await database.KeyDeleteAsync(key);
         }
+        public async Task<bool> ExistsAsync(string key)
+        {
+            return await database.KeyExistsAsync(key);
+        }
         #endregion
 
         #region String (key value)
-        public async Task StringSetAsync(string key, string value, TimeSpan? TTL = null)
+        public async Task StoreStringAsync(string key, string value, TimeSpan? TTL = null)
 		{
 			await database.StringSetAsync(key, value, expiry: TTL);
 		}
-		public async Task<string> StringGetAsync(string key, string @default = null)
+		public async Task<string> FetchStringAsync(string key, string @default = null)
 		{
 			var value = await database.StringGetAsync(key);
 			return value.HasValue ? value.ToString() : @default;
@@ -54,7 +58,7 @@ namespace V21Bot.Redis
         /// <param name="key"></param>
         /// <param name="values"></param>
         /// <returns></returns>
-        public async Task HashSetAsync(string key, Dictionary<string, string> values)
+        public async Task StoreHashMapAsync(string key, Dictionary<string, string> values)
         {
             await database.HashSetAsync(key, ConvertDictionary(values));
         }
@@ -64,7 +68,7 @@ namespace V21Bot.Redis
 		/// </summary>
 		/// <param name="key"></param>
 		/// <returns></returns>
-        public async Task<Dictionary<string, string>> HashGetAsync(string key)
+        public async Task<Dictionary<string, string>> FetchHashMapAsync(string key)
         {
             var hashvals = await database.HashGetAllAsync(key);
             return ConvertHashEntries(hashvals);
@@ -78,12 +82,12 @@ namespace V21Bot.Redis
         /// <param name="key"></param>
         /// <param name="obj"></param>
         /// <returns></returns>
-        public async Task ObjectSetAsync(string key, object obj)
+        public async Task StoreObjectAsync(string key, object obj)
         {
             var dict = RedisConvert.Serialize(obj);
             if (dict.Keys.Count > 0)
             {
-                await this.HashSetAsync(key, dict);
+                await this.StoreHashMapAsync(key, dict);
             }
             else
             {
@@ -98,10 +102,10 @@ namespace V21Bot.Redis
 		/// <typeparam name="T"></typeparam>
 		/// <param name="key"></param>
 		/// <returns></returns>
-        public async Task<T> ObjectGetAsync<T>(string key)
+        public async Task<T> FetchObjectAsync<T>(string key)
         {
             //Get the hashset
-            var dict = await this.HashGetAsync(key);
+            var dict = await this.FetchHashMapAsync(key);
             return RedisConvert.Deserialize<T>(dict);
         }
         #endregion
@@ -113,7 +117,7 @@ namespace V21Bot.Redis
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public async Task<long> SetAddAsync(string key, string value)
+        public async Task<long> AddHashSetAsync(string key, string value)
         {
             return await database.SetAddAsync(key, value) ? 1 : 0;            
         }
@@ -124,7 +128,7 @@ namespace V21Bot.Redis
 		/// <param name="key"></param>
 		/// <param name="values"></param>
 		/// <returns></returns>
-        public async Task<long> SetAddAsync(string key, params string[] values)
+        public async Task<long> AddHashSetAsync(string key, params string[] values)
         {
             RedisValue[] redisValues = new RedisValue[values.Length];
             for (int i = 0; i < values.Length; i++) redisValues[i] = values[i];
@@ -137,7 +141,7 @@ namespace V21Bot.Redis
         /// <param name="key"></param>
         /// <param name="values"></param>
         /// <returns></returns>
-        public async Task<long> SetAddAsync(string key, HashSet<string> values)
+        public async Task<long> AddHashSetAsync(string key, HashSet<string> values)
         {
             //Prepare the current index and the holder of the values
             RedisValue[] redisValues = new RedisValue[values.Count];
@@ -156,7 +160,7 @@ namespace V21Bot.Redis
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public async Task<bool> SetRemoveAsync(string key, string value)
+        public async Task<bool> RemoveHashSetASync(string key, string value)
         {
             return await database.SetRemoveAsync(key, value);
         }
@@ -167,7 +171,7 @@ namespace V21Bot.Redis
 		/// </summary>
 		/// <param name="key"></param>
 		/// <returns></returns>
-        public async Task<HashSet<string>> SetGetAsync(string key)
+        public async Task<HashSet<string>> FetchHashSetAsync(string key)
         {
             RedisValue[] redisValues = await database.SetMembersAsync(key);
             return new HashSet<string>(redisValues.Select(rv => rv.ToString()));
@@ -178,7 +182,7 @@ namespace V21Bot.Redis
 		/// </summary>
 		/// <param name="key"></param>
 		/// <returns></returns>
-        public async Task<string> SetGetRandomAsync(string key)
+        public async Task<string> FetchRandomHashSetElementAsync(string key)
         {
             return await database.SetRandomMemberAsync(key);
         }

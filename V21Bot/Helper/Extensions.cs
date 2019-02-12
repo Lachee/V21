@@ -4,8 +4,10 @@ using DSharpPlus.Entities;
 using DSharpPlus.Interactivity;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using V21Bot.Redis;
 
 namespace V21Bot.Helper
 {
@@ -22,6 +24,119 @@ namespace V21Bot.Helper
             ulong unix_epoch = discord_epoch + 1420070400000L;
             return UnixEpoch.AddMilliseconds(unix_epoch);
         }
+
+        /// <summary>
+        /// Checks if the member is muted.
+        /// </summary>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static async Task<bool> IsMutedAsync(this DiscordMember member)
+        {
+            var previousKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "premute");
+            return await V21.Instance.Redis.ExistsAsync(previousKey);
+        }
+
+        /// <summary>
+        /// Sets the role to apply for muting
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        public static async Task SetMuteRoleAsync(this DiscordGuild guild, DiscordRole role)
+        {
+            var muteKey = RedisNamespace.Create(guild.Id, "moderation", "muterole");
+            await V21.Instance.Redis.StoreStringAsync(muteKey, role.Id.ToString());
+        }
+
+        /// <summary>
+        /// Gets the current mute role
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <returns></returns>
+        public static async Task<DiscordRole> GetMuteRoleAsync(this DiscordGuild guild)
+        {
+            string muteString;
+            ulong muteId;
+            DiscordRole muteRole;
+
+            var muteKey = RedisNamespace.Create(guild.Id, "moderation", "muterole");
+            muteString = await V21.Instance.Redis.FetchStringAsync(muteKey);
+
+            if (muteString == null || !ulong.TryParse(muteString, out muteId) || (muteRole = guild.GetRole(muteId)) == null)
+                return null;
+
+            return muteRole;
+        }
+
+        /// <summary>
+        /// Mutes a member
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="member"></param>
+        /// <param name="reason"></param>
+        /// <returns></returns>
+        public static async Task<bool> MuteAsync(this DiscordMember member, string reason, bool storeRoles = true)
+        {
+            if (member.IsOwner) return false;
+            
+            var muteKey = RedisNamespace.Create(member.Guild.Id, "moderation", "muterole");
+            var previousKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "premute");
+            var reasonKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "reason");
+
+            //Get the mute role
+            var muteRole = await member.Guild.GetMuteRoleAsync();
+            if (muteRole == null) return false;
+
+            //Fetch their current roles (excluding mute role) and store them in a hashset.
+            if (storeRoles)
+            {
+                var userRoles = member.Roles
+                    .Where(r => r.Id != muteRole.Id)
+                    .Select(r => r.Id.ToString())
+                    .ToHashSet();
+                await V21.Instance.Redis.AddHashSetAsync(previousKey, userRoles);
+                await V21.Instance.Redis.StoreStringAsync(reasonKey, reason);
+            }
+
+            //Replace their IDS
+            await member.ReplaceRolesAsync(new DiscordRole[] { muteRole }, reason);
+            return true;
+        }
+
+        /// <summary>
+        /// Unmutes a member
+        /// </summary>
+        /// <param name="guild"></param>
+        /// <param name="member"></param>
+        /// <returns></returns>
+        public static async Task<bool> UnmuteAsync(this DiscordMember member, string reason = "Unmuted")
+        {
+            if (member.IsOwner) return false;
+            
+            var previousKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "premute");
+            var reasonKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "reason");
+
+            //Get the mute role
+            var muteRole = await member.Guild.GetMuteRoleAsync();
+            if (muteRole == null) return false;
+
+            //Fetch Previous Roles.
+            var previousRoles = await V21.Instance.Redis.FetchHashSetAsync(previousKey);
+            if (previousRoles == null || previousRoles.Count == 0)
+                return false;
+
+            //Prepare a list of actual roles to award
+            var roles = member.Guild.Roles.Where(r => previousRoles.Contains(r.Id.ToString()));
+
+            //Remove the old elmenents
+            await V21.Instance.Redis.RemoveAsync(previousKey);
+            await V21.Instance.Redis.RemoveAsync(reasonKey);
+
+            //Replace their IDS
+            await member.ReplaceRolesAsync(roles, reason);
+            return true;
+        }
+
 
         /// <summary>
         /// Gets a guild member based of a discord user.
