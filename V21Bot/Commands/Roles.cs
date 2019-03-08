@@ -128,7 +128,43 @@ namespace V21Bot.Commands
             }
         }
 
-		public static byte[] StringToByteArray(string hex)
+        [Command("rolemapgame")]
+        [Aliases("rmg")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageRoles)]
+        [Description("Maps a game to a role")]
+        public async Task RoleMapGame(CommandContext ctx, DiscordRole role, [RemainingText] string game)
+        {
+            if (!V21.Instance.RedisAvailable)
+            {
+                await ctx.RespondException("Cannot create mapping because redis is unavailable.");
+                return;
+            }
+
+            var redis = V21.Instance.Redis;
+            string key = RedisNamespace.Create(ctx.Guild.Id, "rolemap", "game", game.ToLowerInvariant().Replace(" ", ""));
+            await redis.StoreStringAsync(key, role.Id.ToString());
+            await ctx.RespondAsync("Added mapping for game " + game + " to role " + role.Name);
+        }
+
+        [Command("rolemapgameremove")]
+        [Aliases("rmgr")]
+        [RequirePermissions(DSharpPlus.Permissions.ManageRoles)]
+        [Description("Removes a game from the role")]
+        public async Task RoleMapGameRemove(CommandContext ctx, [RemainingText] string game)
+        {
+            if (!V21.Instance.RedisAvailable)
+            {
+                await ctx.RespondException("Cannot create mapping because redis is unavailable.");
+                return;
+            }
+
+            var redis = V21.Instance.Redis;
+            string key = RedisNamespace.Create(ctx.Guild.Id, "rolemap", "game", game.ToLowerInvariant().Replace(" ", ""));
+            await redis.RemoveAsync(key);
+            await ctx.RespondAsync("Removed mapping for " + game);
+        }
+
+        public static byte[] StringToByteArray(string hex)
 		{
 			if (hex.Length <= 1) return new byte[0];
 

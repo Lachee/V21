@@ -62,6 +62,31 @@ namespace V21Bot
                 Timeout = new TimeSpan(0, 10, 0),
             });
 
+            //The game => Role feature
+            Discord.PresenceUpdated += async (evt) =>
+            {
+                if (evt.Game == null) return;
+
+                //Get the game then the role
+                string gameName = evt.Game.Name.ToLowerInvariant().Replace(" ", "");
+                string key = RedisNamespace.Create(evt.Guild.Id, "rolemap", "game", gameName);
+                string roleIdStr = await Redis.FetchStringAsync(key, null);
+                if (roleIdStr != null && ulong.TryParse(roleIdStr, out var roleId))
+                {
+                    var role = evt.Guild.GetRole(roleId);
+                    if (role != null)
+                    {
+                        Console.WriteLine("Applying Role!");
+                        await evt.Member.GrantRoleAsync(role, "Role Game Map");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid Role!");
+                        await Redis.RemoveAsync(key);
+                    }
+                }
+            };
+
             //The deg think feature
             Discord.MessageCreated += async (evt) =>
             {
