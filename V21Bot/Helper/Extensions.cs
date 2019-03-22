@@ -142,7 +142,7 @@ namespace V21Bot.Helper
             else
             {
                 //They literally had no roles, so just remove everything
-                await member.ReplaceRolesAsync()
+                await member.ReplaceRolesAsync(new DiscordRole[0]);
             }
 
             //Remove the reason key
