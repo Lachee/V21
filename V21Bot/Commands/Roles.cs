@@ -139,13 +139,24 @@ namespace V21Bot.Commands
                 await ctx.RespondException("Cannot create mapping because redis is unavailable.");
                 return;
             }
+            
+            string gameName = (game ?? "").ToLowerInvariant().Replace(" ", "");
+            if (string.IsNullOrWhiteSpace(gameName))
+            {
+                gameName = ctx.Member.Presence?.Game?.Name.ToLowerInvariant().Replace(" ", "");
+                if (gameName == null)
+                {
+                    await ctx.RespondException("Cannot create mapping because no game.");
+                    return;
+                }
+            }
 
             var redis = V21.Instance.Redis;
-            string key = RedisNamespace.Create(ctx.Guild.Id, "rolemap", "game", game.ToLowerInvariant().Replace(" ", ""));
+            string key = RedisNamespace.Create(ctx.Guild.Id, "rolemap", "game", gameName);
             await redis.StoreStringAsync(key, role.Id.ToString());
             await ctx.RespondAsync("Added mapping for game " + game + " to role " + role.Name);
         }
-
+        
         [Command("rolemapgameremove")]
         [Aliases("rmgr")]
         [RequirePermissions(DSharpPlus.Permissions.ManageRoles)]

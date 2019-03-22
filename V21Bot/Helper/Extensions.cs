@@ -94,7 +94,12 @@ namespace V21Bot.Helper
                     .Where(r => r.Id != muteRole.Id)
                     .Select(r => r.Id.ToString())
                     .ToHashSet();
-                await V21.Instance.Redis.AddHashSetAsync(previousKey, userRoles);
+
+                //Store the roles
+                if (userRoles.Count > 0)
+                    await V21.Instance.Redis.AddHashSetAsync(previousKey, userRoles);
+
+                //Store the reason
                 await V21.Instance.Redis.StoreStringAsync(reasonKey, reason);
             }
 
@@ -112,7 +117,7 @@ namespace V21Bot.Helper
         public static async Task<bool> UnmuteAsync(this DiscordMember member, string reason = "Unmuted")
         {
             if (member.IsOwner) return false;
-            
+
             var previousKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "premute");
             var reasonKey = RedisNamespace.Create(member.Guild.Id, "moderation", member.Id, "reason");
 
@@ -122,18 +127,26 @@ namespace V21Bot.Helper
 
             //Fetch Previous Roles.
             var previousRoles = await V21.Instance.Redis.FetchHashSetAsync(previousKey);
-            if (previousRoles == null || previousRoles.Count == 0)
-                return false;
+            if (previousRoles != null && previousRoles.Count == 0)
+            {
 
-            //Prepare a list of actual roles to award
-            var roles = member.Guild.Roles.Where(r => previousRoles.Contains(r.Id.ToString()));
+                //Prepare a list of actual roles to award
+                var roles = member.Guild.Roles.Where(r => previousRoles.Contains(r.Id.ToString()));
 
-            //Remove the old elmenents
-            await V21.Instance.Redis.RemoveAsync(previousKey);
+                //Remove the old elmenents
+                await V21.Instance.Redis.RemoveAsync(previousKey);
+
+                //Replace their IDS
+                await member.ReplaceRolesAsync(roles, reason);
+            }
+            else
+            {
+                //They literally had no roles, so just remove everything
+                await member.ReplaceRolesAsync()
+            }
+
+            //Remove the reason key
             await V21.Instance.Redis.RemoveAsync(reasonKey);
-
-            //Replace their IDS
-            await member.ReplaceRolesAsync(roles, reason);
             return true;
         }
 
