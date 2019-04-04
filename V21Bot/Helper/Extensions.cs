@@ -126,27 +126,24 @@ namespace V21Bot.Helper
             if (muteRole == null) return false;
 
             //Fetch Previous Roles.
-            var previousRoles = await V21.Instance.Redis.FetchHashSetAsync(previousKey);
-            if (previousRoles != null && previousRoles.Count == 0)
+            var previousRoleIDs = await V21.Instance.Redis.FetchHashSetAsync(previousKey);
+            DiscordRole[] previousRoles = new DiscordRole[0];
+
+            if (previousRoleIDs != null && previousRoleIDs.Count == 0)
             {
 
                 //Prepare a list of actual roles to award
-                var roles = member.Guild.Roles.Where(r => previousRoles.Contains(r.Id.ToString()));
-
-                //Remove the old elmenents
-                await V21.Instance.Redis.RemoveAsync(previousKey);
-
-                //Replace their IDS
-                await member.ReplaceRolesAsync(roles, reason);
-            }
-            else
-            {
-                //They literally had no roles, so just remove everything
-                await member.ReplaceRolesAsync(new DiscordRole[0]);
+                previousRoles = member.Guild.Roles
+                    .Where(r => previousRoleIDs.Contains(r.Id.ToString()))
+                    .ToArray();
             }
 
-            //Remove the reason key
+            //Remove the keys
+            await V21.Instance.Redis.RemoveAsync(previousKey);
             await V21.Instance.Redis.RemoveAsync(reasonKey);
+
+            //Replace roles
+            await member.ReplaceRolesAsync(previousRoles, reason);
             return true;
         }
 
