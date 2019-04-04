@@ -129,7 +129,7 @@ namespace V21Bot.Helper
             var previousRoleIDs = await V21.Instance.Redis.FetchHashSetAsync(previousKey);
             DiscordRole[] previousRoles = new DiscordRole[0];
 
-            if (previousRoleIDs != null && previousRoleIDs.Count == 0)
+            if (previousRoleIDs != null && previousRoleIDs.Count > 0)
             {
 
                 //Prepare a list of actual roles to award
