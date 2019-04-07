@@ -133,24 +133,39 @@ namespace V21Bot.Commands
 			await DownloadAndGenerate(ctx, new TriggeredMagick(), url);
 		}
 
-		[Command("pats")]
-		[Aliases("pat")]
-		[Description("Pats the discord user")]
-		public async Task Pats(CommandContext ctx, [Description("The user to pat")] DiscordUser user = null)
-		{
-			//If the user hasnt been assigned, we will set it to ourself
-			if (user == null) user = ctx.User;
+        [Command("pats")]
+        [Aliases("pat")]
+        [Description("Pats the discord user")]
+        public async Task Pats(CommandContext ctx, [Description("The user to pat")] DiscordUser user = null)
+        {
+            //If the user hasnt been assigned, we will set it to ourself
+            if (user == null) user = ctx.User;
 
-			//If the url is null, we will set it to the user specified
-			string url = user.GetAvatarUrl(DSharpPlus.ImageFormat.Png, 256);
+            //If the url is null, we will set it to the user specified
+            string url = user.GetAvatarUrl(DSharpPlus.ImageFormat.Png, 256);
 
-			//Generate the image
-			await DownloadAndGenerate(ctx, new PatsMagick(), url);
-		}
+            //Generate the image
+            await DownloadAndGenerate(ctx, new PatsMagick(), url, ctx.Member.IsOwner);
+        }
 
-		#region Image Generation and Sending
+        [Command("hyper-pats")]
+        [Aliases("hpat", "hp")]
+        [Description("Pats the discord user")]
+        public async Task Pats(CommandContext ctx, double speed, [Description("The user to pat")] DiscordUser user = null)
+        {
+            //If the user hasnt been assigned, we will set it to ourself
+            if (user == null) user = ctx.User;
 
-		private async Task DownloadAndGenerate(CommandContext ctx, IMagick magick, string url)
+            //If the url is null, we will set it to the user specified
+            string url = user.GetAvatarUrl(DSharpPlus.ImageFormat.Png, 256);
+
+            //Generate the image
+            await DownloadAndGenerate(ctx, new PatsMagick() { FrameCount = 60, FrameDelay = 1, Speed = speed } , url, ctx.Member.IsOwner);
+        }
+
+        #region Image Generation and Sending
+
+        private async Task DownloadAndGenerate(CommandContext ctx, IMagick magick, string url, bool forceRecache = false)
 		{
 			//Trigger typing 
 			await ctx.TriggerTypingAsync();
@@ -160,7 +175,7 @@ namespace V21Bot.Commands
 
 			//Check the cache for any images, if we have some, we dont need to resuse it.
 			byte[] data = await FetchCachedImage(cachekey);
-			if (data != null && data.Length > 0)
+			if (!forceRecache && data != null && data.Length > 0)
 			{
 				//React to the message, say its okay and we understand the request
 				DiscordEmoji emoji = DiscordEmoji.FromName(ctx.Client, EmojiFolder);

@@ -18,6 +18,8 @@ namespace V21Bot.Magicks
 		public int Height { get; set; } = 375;
 		public int Colours { get; set; } = 64;
 
+        public double Speed { get; set; } = 2;
+
 		private bool _enableAlpha = true;
 
 		public string Name => "pats";
@@ -59,7 +61,7 @@ namespace V21Bot.Magicks
 
 						//Calcaulte the y
 						//MAX 60
-						double sin = Math.Sin((Math.PI * 2.0) * (double)(i / (double)FrameCount));
+						double sin = Math.Sin((Math.PI * 2.0) * ((double)(i / (double)FrameCount) * Speed));
 						sin = (sin + 1) * 30;
 
 						int y = (int)Math.Round(sin);

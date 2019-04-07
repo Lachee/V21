@@ -221,20 +221,8 @@ namespace V21Bot.Commands
 		[Description("Rolls dice")]
 		public async Task Roll(CommandContext ctx, [RemainingText] string expression)
 		{
-            //roll [op] value, op value, op value, op value
-            //roll 1d10
-            //roll 1d10 + 5
-            //roll 2d20 - 10
-            //roll 3d10 + 5d20 + 5
-            /*
-             * 3D10:	3 + 10 + 2 
-             * 5D20:	15 + 17 + 8 + 1
-             * 5:		5
-             * 
-             */
-
             //Prepare the expresion and result
-            string expr = Regex.Replace(expression, "\\d+d\\d+", DiceRegexReplacer); 
+            string expr = Regex.Replace(expression, "\\d*d\\d+", DiceRegexReplacer); 
             double result = 0;
             
             //Evaluate
@@ -250,18 +238,19 @@ namespace V21Bot.Commands
 
         private string DiceRegexReplacer(Match match)
         {
-            int count, sides, tally = 0;
+            int tally = 0;
+            uint count, sides;
             string[] parts = match.Value.Split('d');
 
             //Make sure its parsed correctly
             if (parts.Length != 2) return match.Value;
-            if (!int.TryParse(parts[0], out count)) return match.Value;
-            if (!int.TryParse(parts[1], out sides)) return match.Value;
+            if (!uint.TryParse(parts[0], out count)) count = 1;
+            if (!uint.TryParse(parts[1], out sides)) sides = 6;
 
             //Roll the dice numerous times
             Random random = new Random();
-            for (int i = 0; i < count; i++)
-                tally += random.Next(1, sides);
+            for (uint i = 0; i < count; i++)
+                tally += random.Next(1, (int) sides);
 
             //return the tally
             return tally.ToString();
