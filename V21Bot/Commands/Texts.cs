@@ -12,6 +12,7 @@ using ImageMagick;
 using V21Bot.Magicks;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Data;
 
 namespace V21Bot.Commands
 {
@@ -218,62 +219,53 @@ namespace V21Bot.Commands
 		[Command("roll")]
 		[Aliases("r")]
 		[Description("Rolls dice")]
-		public async Task Roll(CommandContext ctx, [RemainingText] params string[] messages)
+		public async Task Roll(CommandContext ctx, [RemainingText] string expression)
 		{
-			//roll [op] value, op value, op value, op value
-//roll 1d10
-//roll 1d10 + 5
-//roll 2d20 - 10
-//roll 3d10 + 5d20 + 5
-/*
- * 3D10:	3 + 10 + 2 
- * 5D20:	15 + 17 + 8 + 1
- * 5:		5
- * 
- */
+            //roll [op] value, op value, op value, op value
+            //roll 1d10
+            //roll 1d10 + 5
+            //roll 2d20 - 10
+            //roll 3d10 + 5d20 + 5
+            /*
+             * 3D10:	3 + 10 + 2 
+             * 5D20:	15 + 17 + 8 + 1
+             * 5:		5
+             * 
+             */
+
+            //Prepare the expresion and result
+            string expr = Regex.Replace(expression, "\\d+d\\d+", DiceRegexReplacer); 
+            double result = 0;
+            
+            //Evaluate
+            DataTable table = new DataTable();
+            table.Columns.Add("expression", typeof(string), expr);
+            var row = table.NewRow();
+            table.Rows.Add(row);
+            result = double.Parse((string)row["expression"]);
+
+            //Return the result
+            await ctx.RespondAsync(content: $"🎲 `{result}`\n        `{expr}`");
 		}
 
-		private bool RollValue(Random random, string dice, out int value)
-		{
-			if (int.TryParse(dice, out value)) return true;
-			var match = DiceRegex.Match(dice);
-			if (match.Success)
-			{
-				int count = 0;
-				int sides = 0;
-				bool isNegative = false;
+        private string DiceRegexReplacer(Match match)
+        {
+            int count, sides, tally = 0;
+            string[] parts = match.Value.Split('d');
 
-				if (!string.IsNullOrEmpty(match.Groups["count"].Value))
-				{
-					if (!int.TryParse(match.Groups["count"].Value, out count) || count < 1)
-						return false;
-				}
+            //Make sure its parsed correctly
+            if (parts.Length != 2) return match.Value;
+            if (!int.TryParse(parts[0], out count)) return match.Value;
+            if (!int.TryParse(parts[1], out sides)) return match.Value;
 
-				if (!string.IsNullOrEmpty(match.Groups["sides"].Value))
-				{
-					if (!int.TryParse(match.Groups["sides"].Value, out sides))
-						return false;
+            //Roll the dice numerous times
+            Random random = new Random();
+            for (int i = 0; i < count; i++)
+                tally += random.Next(1, sides);
 
-					if (sides >= -1 && sides <= 1)
-						return false;
-					
-					if (sides < 0)
-					{
-						isNegative = true;
-						sides *= -1;
-					}
-				}
-
-				//Do the random iterations, make sure we capout the count tho
-				for (int i = 0; i < count; i++)
-					value += random.Next(sides);
-
-				if (isNegative) value *= -1;
-				return true;
-			}
-
-			return false;
-		}
+            //return the tally
+            return tally.ToString();
+        }
 	}
 }
 
