@@ -231,7 +231,7 @@ namespace V21Bot.Commands
             var row = table.NewRow();
             table.Rows.Add(row);
             result = double.Parse((string)row["expression"]);
-
+            
             //Return the result
             await ctx.RespondAsync(content: $"🎲 `{result}`\n        `{expr}`");
 		}
@@ -241,6 +241,7 @@ namespace V21Bot.Commands
             int tally = 0;
             uint count, sides;
             string[] parts = match.Value.Split('d');
+            
 
             //Make sure its parsed correctly
             if (parts.Length != 2) return match.Value;

@@ -12,6 +12,25 @@ namespace V21Bot.Commands
 {
     public class Moderation
     {
+        [Command("clearaemoji")]
+        [RequireOwner]
+        public async Task ClearEmoji(CommandContext ctx)
+        {
+            await ctx.RespondAsync("DELETING");
+
+            var msg = await ctx.Guild.GetChannel(404084064291782669L).GetMessageAsync(404121123668885514L);
+            var emoji = msg.Reactions.Where(r => r.Emoji.ToString() == "🅰").First().Emoji;
+            var users = await msg.GetReactionsAsync(emoji);
+            foreach (var user in users)
+            {
+                await msg.DeleteReactionAsync(emoji, user, "Atlas being removed");
+                await Task.Delay(1000);
+            }
+
+            await ctx.RespondAsync("DONE");
+
+        }
+
         [Command("nick")]
         [Description("Forces a user to have a set nickname. If a empty nickname is supplied the enforcement is removed.")]
         [RequirePermissions(DSharpPlus.Permissions.ManageNicknames)]
