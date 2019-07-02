@@ -76,8 +76,11 @@ namespace V21Bot
                     var role = evt.Guild.GetRole(roleId);
                     if (role != null)
                     {
-                        Console.WriteLine("Applying Role!");
-                        await evt.Member.GrantRoleAsync(role, "Role Game Map");
+                        if (!evt.Member.Roles.Contains(role))
+                        {
+                            Console.WriteLine("Applying Role {0} to {1} because game mapped {2}", role, evt.Member, gameName);
+                            await evt.Member.GrantRoleAsync(role, "Role Game Map");
+                        }
                     }
                     else
                     {
